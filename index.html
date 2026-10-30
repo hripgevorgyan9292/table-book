@@ -14,6 +14,7 @@
       --border: #e4dfd8;
       --accent: #b5562b;
       --accent-soft: #f6e6dc;
+      --error: #c0392b;
     }
 
     [data-theme="dark"] {
@@ -24,6 +25,7 @@
       --border: #3a3530;
       --accent: #e48a5c;
       --accent-soft: #3a2a21;
+      --error: #f07167;
     }
 
     * { box-sizing: border-box; }
@@ -88,6 +90,58 @@
     }
 
     .theme-toggle:hover { border-color: var(--accent); }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .signup-btn {
+      border: none;
+      background: var(--accent);
+      color: #ffffff;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .signup-btn:hover { opacity: 0.9; }
+
+    .user-name {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-name[hidden] { display: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      max-width: calc(100% - 32px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+      z-index: 200;
+    }
+
+    .toast[hidden] { display: none; }
 
     .hero {
       padding: 64px 0 48px;
@@ -192,6 +246,112 @@
       font-size: 0.95rem;
     }
 
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+
+    .modal-overlay[hidden] { display: none; }
+
+    .modal {
+      position: relative;
+      width: 100%;
+      max-width: 440px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px 24px;
+    }
+
+    .modal h2 {
+      margin: 0 0 20px;
+      font-size: 1.4rem;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: none;
+      color: var(--muted);
+      font-size: 1.6rem;
+      line-height: 1;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+
+    .modal-close:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .field input {
+      min-width: 0;
+      font: inherit;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .field.invalid input { border-color: var(--error); }
+
+    .error-msg {
+      min-height: 1.2em;
+      font-size: 0.82rem;
+      color: var(--error);
+    }
+
+    .submit-btn {
+      width: 100%;
+      border: none;
+      background: var(--accent);
+      color: #ffffff;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .submit-btn:hover { opacity: 0.9; }
+
     footer {
       border-top: 1px solid var(--border);
       padding: 24px 0;
@@ -200,10 +360,14 @@
       text-align: center;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 760px) {
       nav { display: none; }
+    }
+
+    @media (max-width: 640px) {
       .hero { padding: 40px 0 32px; }
       section { padding: 36px 0; }
+      .form-row { grid-template-columns: 1fr; gap: 0; }
     }
   </style>
 </head>
@@ -216,7 +380,11 @@
         <a href="#how">Ինչպես է աշխատում</a>
         <a href="#features">Հնարավորություններ</a>
       </nav>
-      <button class="theme-toggle" id="themeToggle" type="button">🌙 Մուգ</button>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" type="button">🌙 Մուգ</button>
+        <button class="signup-btn" id="signupBtn" type="button">Գրանցվել</button>
+        <span class="user-name" id="userName" hidden></span>
+      </div>
     </div>
   </header>
 
@@ -321,6 +489,45 @@
     </section>
   </main>
 
+  <div class="modal-overlay" id="signupModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Փակել">×</button>
+      <h2 id="signupTitle">Գրանցում</h2>
+      <form id="signupForm" novalidate>
+        <div class="form-row">
+          <div class="field">
+            <label for="firstName">Անուն</label>
+            <input type="text" id="firstName" name="firstName" autocomplete="given-name">
+            <small class="error-msg" id="firstNameError"></small>
+          </div>
+          <div class="field">
+            <label for="lastName">Ազգանուն</label>
+            <input type="text" id="lastName" name="lastName" autocomplete="family-name">
+            <small class="error-msg" id="lastNameError"></small>
+          </div>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" autocomplete="email">
+          <small class="error-msg" id="emailError"></small>
+        </div>
+        <div class="field">
+          <label for="password">Գաղտնաբառ</label>
+          <input type="password" id="password" name="password" autocomplete="new-password">
+          <small class="error-msg" id="passwordError"></small>
+        </div>
+        <div class="field">
+          <label for="passwordConfirm">Կրկնեք գաղտնաբառը</label>
+          <input type="password" id="passwordConfirm" name="passwordConfirm" autocomplete="new-password">
+          <small class="error-msg" id="passwordConfirmError"></small>
+        </div>
+        <button class="submit-btn" type="submit">Գրանցվել</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
   <footer>
     <div class="container">TableBook · Սեղանների ամրագրում փոքր սրճարանների համար</div>
   </footer>
@@ -344,6 +551,137 @@
       applyTheme(next);
       try { localStorage.setItem("theme", next); } catch (e) {}
     });
+
+    const signupBtn = document.getElementById("signupBtn");
+    const signupModal = document.getElementById("signupModal");
+    const modalClose = document.getElementById("modalClose");
+
+    function openModal() {
+      signupModal.hidden = false;
+      document.getElementById("firstName").focus();
+    }
+
+    function closeModal() {
+      signupModal.hidden = true;
+      signupBtn.focus();
+    }
+
+    signupBtn.addEventListener("click", openModal);
+    modalClose.addEventListener("click", closeModal);
+
+    // Փակել, երբ սեղմում են պատուհանից դուրս՝ մուգ ֆոնի վրա
+    signupModal.addEventListener("click", (event) => {
+      if (event.target === signupModal) closeModal();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !signupModal.hidden) closeModal();
+    });
+
+    const signupForm = document.getElementById("signupForm");
+
+    // Գրանցված email-ների ցուցակը (միայն այս բրաուզերում, առանց գաղտնաբառերի)
+    function getRegisteredEmails() {
+      try {
+        return JSON.parse(localStorage.getItem("registeredEmails")) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveRegisteredEmail(email) {
+      const emails = getRegisteredEmails();
+      emails.push(email);
+      try { localStorage.setItem("registeredEmails", JSON.stringify(emails)); } catch (e) {}
+    }
+
+    function showError(fieldId, message) {
+      document.getElementById(fieldId + "Error").textContent = message;
+      document.getElementById(fieldId).parentElement.classList.toggle("invalid", message !== "");
+    }
+
+    function validateForm() {
+      const firstName = signupForm.firstName.value.trim();
+      const lastName = signupForm.lastName.value.trim();
+      const email = signupForm.email.value.trim().toLowerCase();
+      const password = signupForm.password.value;
+      const passwordConfirm = signupForm.passwordConfirm.value;
+      const errors = {};
+
+      if (!firstName) errors.firstName = "Գրեք ձեր անունը";
+      if (!lastName) errors.lastName = "Գրեք ձեր ազգանունը";
+
+      if (!email) {
+        errors.email = "Գրեք ձեր email-ը";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.email = "Email-ը սխալ է գրված";
+      } else if (getRegisteredEmails().includes(email)) {
+        errors.email = "Այս email-ով արդեն գրանցված օգտատեր կա";
+      }
+
+      if (!password) {
+        errors.password = "Գրեք գաղտնաբառ";
+      } else if (password.length < 6) {
+        errors.password = "Գաղտնաբառը պետք է լինի առնվազն 6 նիշ";
+      }
+
+      if (!passwordConfirm) {
+        errors.passwordConfirm = "Կրկնեք գաղտնաբառը";
+      } else if (password !== passwordConfirm) {
+        errors.passwordConfirm = "Գաղտնաբառերը չեն համընկնում";
+      }
+
+      ["firstName", "lastName", "email", "password", "passwordConfirm"].forEach((id) => {
+        showError(id, errors[id] || "");
+      });
+
+      return Object.keys(errors).length === 0 ? { firstName, lastName, email } : null;
+    }
+
+    // Դաշտում գրելիս հանել տվյալ դաշտի սխալը
+    signupForm.addEventListener("input", (event) => {
+      showError(event.target.id, "");
+    });
+
+    signupForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const user = validateForm();
+      if (!user) return;
+
+      saveRegisteredEmail(user.email);
+      try {
+        localStorage.setItem("currentUser", JSON.stringify({ firstName: user.firstName, lastName: user.lastName }));
+      } catch (e) {}
+
+      signupForm.reset();
+      closeModal();
+      showUser(user);
+      showToast("Բարի գալուստ, " + user.firstName + "։ Գրանցումը հաջողվեց։");
+    });
+
+    const userName = document.getElementById("userName");
+    const toast = document.getElementById("toast");
+    let toastTimer;
+
+    // «Գրանցվել» կոճակի փոխարեն ցույց տալ օգտատիրոջ անունը
+    function showUser(user) {
+      userName.textContent = "👤 " + user.firstName + " " + user.lastName;
+      userName.hidden = false;
+      signupBtn.hidden = true;
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 4000);
+    }
+
+    // Էջը բացելիս ստուգել՝ արդյոք օգտատերն արդեն գրանցված է
+    try {
+      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
+      if (savedUser) showUser(savedUser);
+    } catch (e) {}
   </script>
 </body>
 </html>

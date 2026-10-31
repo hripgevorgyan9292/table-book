@@ -1,0 +1,10 @@
+{
+  "name": "table-book",
+  "version": "1.0.0",
+  "description": "TableBook — table reservation page",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "private": true
+}

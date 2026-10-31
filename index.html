@@ -78,7 +78,8 @@
 
     nav a:hover { color: var(--accent); }
 
-    .theme-toggle {
+    .theme-toggle,
+    .outline-btn {
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text);
@@ -89,7 +90,8 @@
       white-space: nowrap;
     }
 
-    .theme-toggle:hover { border-color: var(--accent); }
+    .theme-toggle:hover,
+    .outline-btn:hover { border-color: var(--accent); }
 
     .header-actions {
       display: flex;
@@ -352,6 +354,30 @@
 
     .submit-btn:hover { opacity: 0.9; }
 
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .modal-switch {
+      margin: 16px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .link-btn {
+      border: none;
+      background: none;
+      padding: 0;
+      font: inherit;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .link-btn:hover { text-decoration: underline; }
+
     footer {
       border-top: 1px solid var(--border);
       padding: 24px 0;
@@ -369,6 +395,12 @@
       section { padding: 36px 0; }
       .form-row { grid-template-columns: 1fr; gap: 0; }
     }
+
+    @media (max-width: 420px) {
+      .logo { font-size: 1.05rem; }
+      .header-actions { gap: 6px; }
+      .theme-toggle, .outline-btn, .signup-btn { padding: 6px 10px; font-size: 0.82rem; }
+    }
   </style>
 </head>
 <body>
@@ -382,8 +414,10 @@
       </nav>
       <div class="header-actions">
         <button class="theme-toggle" id="themeToggle" type="button">🌙 Մուգ</button>
+        <button class="outline-btn" id="loginBtn" type="button">Մուտք</button>
         <button class="signup-btn" id="signupBtn" type="button">Գրանցվել</button>
         <span class="user-name" id="userName" hidden></span>
+        <button class="outline-btn" id="logoutBtn" type="button" hidden>Ելք</button>
       </div>
     </div>
   </header>
@@ -491,7 +525,7 @@
 
   <div class="modal-overlay" id="signupModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
-      <button class="modal-close" id="modalClose" type="button" aria-label="Փակել">×</button>
+      <button class="modal-close" type="button" aria-label="Փակել">×</button>
       <h2 id="signupTitle">Գրանցում</h2>
       <form id="signupForm" novalidate>
         <div class="form-row">
@@ -523,6 +557,28 @@
         </div>
         <button class="submit-btn" type="submit">Գրանցվել</button>
       </form>
+      <p class="modal-switch">Արդեն ունե՞ք հաշիվ։ <button class="link-btn" type="button" data-open="loginModal">Մուտք գործել</button></p>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="loginModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <button class="modal-close" type="button" aria-label="Փակել">×</button>
+      <h2 id="loginTitle">Մուտք</h2>
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" name="email" autocomplete="email">
+          <small class="error-msg" id="loginEmailError"></small>
+        </div>
+        <div class="field">
+          <label for="loginPassword">Գաղտնաբառ</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password">
+          <small class="error-msg" id="loginPasswordError"></small>
+        </div>
+        <button class="submit-btn" type="submit">Մուտք գործել</button>
+      </form>
+      <p class="modal-switch">Դեռ հաշիվ չունե՞ք։ <button class="link-btn" type="button" data-open="signupModal">Գրանցվել</button></p>
     </div>
   </div>
 
@@ -553,47 +609,63 @@
     });
 
     const signupBtn = document.getElementById("signupBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
     const signupModal = document.getElementById("signupModal");
-    const modalClose = document.getElementById("modalClose");
+    const loginModal = document.getElementById("loginModal");
+    let openedModal = null;
+    let lastFocused = null;
 
-    function openModal() {
-      signupModal.hidden = false;
-      document.getElementById("firstName").focus();
+    function openModal(modal) {
+      if (openedModal) openedModal.hidden = true;
+      else lastFocused = document.activeElement;
+      openedModal = modal;
+      modal.hidden = false;
+      modal.querySelector("input").focus();
     }
 
     function closeModal() {
-      signupModal.hidden = true;
-      signupBtn.focus();
+      if (!openedModal) return;
+      openedModal.hidden = true;
+      openedModal = null;
+      if (lastFocused && !lastFocused.hidden) lastFocused.focus();
     }
 
-    signupBtn.addEventListener("click", openModal);
-    modalClose.addEventListener("click", closeModal);
+    signupBtn.addEventListener("click", () => openModal(signupModal));
+    loginBtn.addEventListener("click", () => openModal(loginModal));
+
+    document.querySelectorAll(".modal-close").forEach((btn) => {
+      btn.addEventListener("click", closeModal);
+    });
+
+    // Անցում «Գրանցում» և «Մուտք» պատուհանների միջև
+    document.querySelectorAll("[data-open]").forEach((btn) => {
+      btn.addEventListener("click", () => openModal(document.getElementById(btn.dataset.open)));
+    });
 
     // Փակել, երբ սեղմում են պատուհանից դուրս՝ մուգ ֆոնի վրա
-    signupModal.addEventListener("click", (event) => {
-      if (event.target === signupModal) closeModal();
+    [signupModal, loginModal].forEach((modal) => {
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeModal();
+      });
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !signupModal.hidden) closeModal();
+      if (event.key === "Escape") closeModal();
     });
 
+    const NETWORK_ERROR = "Չհաջողվեց կապվել սերվերի հետ։ Փորձեք կրկին։";
+
+    async function postJson(url, data) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      return { ok: response.ok, result: await response.json() };
+    }
+
     const signupForm = document.getElementById("signupForm");
-
-    // Գրանցված email-ների ցուցակը (միայն այս բրաուզերում, առանց գաղտնաբառերի)
-    function getRegisteredEmails() {
-      try {
-        return JSON.parse(localStorage.getItem("registeredEmails")) || [];
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function saveRegisteredEmail(email) {
-      const emails = getRegisteredEmails();
-      emails.push(email);
-      try { localStorage.setItem("registeredEmails", JSON.stringify(emails)); } catch (e) {}
-    }
 
     function showError(fieldId, message) {
       document.getElementById(fieldId + "Error").textContent = message;
@@ -615,8 +687,6 @@
         errors.email = "Գրեք ձեր email-ը";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         errors.email = "Email-ը սխալ է գրված";
-      } else if (getRegisteredEmails().includes(email)) {
-        errors.email = "Այս email-ով արդեն գրանցված օգտատեր կա";
       }
 
       if (!password) {
@@ -635,7 +705,7 @@
         showError(id, errors[id] || "");
       });
 
-      return Object.keys(errors).length === 0 ? { firstName, lastName, email } : null;
+      return Object.keys(errors).length === 0 ? { firstName, lastName, email, password } : null;
     }
 
     // Դաշտում գրելիս հանել տվյալ դաշտի սխալը
@@ -643,31 +713,100 @@
       showError(event.target.id, "");
     });
 
-    signupForm.addEventListener("submit", (event) => {
+    const submitBtn = signupForm.querySelector(".submit-btn");
+
+    // Ուղարկել տվյալները սերվերին, որը դրանք պահում է տվյալների բազայում
+    signupForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const user = validateForm();
-      if (!user) return;
+      const formData = validateForm();
+      if (!formData) return;
 
-      saveRegisteredEmail(user.email);
+      submitBtn.disabled = true;
       try {
-        localStorage.setItem("currentUser", JSON.stringify({ firstName: user.firstName, lastName: user.lastName }));
-      } catch (e) {}
+        const { ok, result } = await postJson("/api/signup", formData);
 
-      signupForm.reset();
-      closeModal();
-      showUser(user);
-      showToast("Բարի գալուստ, " + user.firstName + "։ Գրանցումը հաջողվեց։");
+        if (!ok) {
+          Object.entries(result.errors || {}).forEach(([id, message]) => showError(id, message));
+          if (result.error) showToast(result.error);
+          return;
+        }
+
+        signupForm.reset();
+        closeModal();
+        showUser(result.user);
+        showToast("Բարի գալուստ, " + result.user.firstName + "։ Գրանցումը հաջողվեց։");
+      } catch (e) {
+        showToast(NETWORK_ERROR);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    const loginForm = document.getElementById("loginForm");
+    const loginSubmitBtn = loginForm.querySelector(".submit-btn");
+
+    loginForm.addEventListener("input", (event) => {
+      showError(event.target.id, "");
+    });
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const email = loginForm.email.value.trim();
+      const password = loginForm.password.value;
+
+      showError("loginEmail", email ? "" : "Գրեք ձեր email-ը");
+      showError("loginPassword", password ? "" : "Գրեք գաղտնաբառը");
+      if (!email || !password) return;
+
+      loginSubmitBtn.disabled = true;
+      try {
+        const { ok, result } = await postJson("/api/login", { email, password });
+
+        if (!ok) {
+          showError("loginPassword", result.error || NETWORK_ERROR);
+          return;
+        }
+
+        loginForm.reset();
+        closeModal();
+        showUser(result.user);
+        showToast("Բարի վերադարձ, " + result.user.firstName + "։");
+      } catch (e) {
+        showToast(NETWORK_ERROR);
+      } finally {
+        loginSubmitBtn.disabled = false;
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await postJson("/api/logout", {});
+        showGuest();
+        showToast("Դուք դուրս եկաք հաշվից։");
+      } catch (e) {
+        showToast(NETWORK_ERROR);
+      }
     });
 
     const userName = document.getElementById("userName");
     const toast = document.getElementById("toast");
     let toastTimer;
 
-    // «Գրանցվել» կոճակի փոխարեն ցույց տալ օգտատիրոջ անունը
+    // «Մուտք» և «Գրանցվել» կոճակների փոխարեն ցույց տալ օգտատիրոջ անունը և «Ելք» կոճակը
     function showUser(user) {
       userName.textContent = "👤 " + user.firstName + " " + user.lastName;
       userName.hidden = false;
+      logoutBtn.hidden = false;
+      loginBtn.hidden = true;
       signupBtn.hidden = true;
+    }
+
+    function showGuest() {
+      userName.hidden = true;
+      logoutBtn.hidden = true;
+      loginBtn.hidden = false;
+      signupBtn.hidden = false;
+      loginBtn.focus();
     }
 
     function showToast(message) {
@@ -677,10 +816,16 @@
       toastTimer = setTimeout(() => { toast.hidden = true; }, 4000);
     }
 
-    // Էջը բացելիս ստուգել՝ արդյոք օգտատերն արդեն գրանցված է
+    // Էջը բացելիս սերվերից ստուգել՝ արդյոք օգտատերը մուտք է գործած
+    fetch("/api/me")
+      .then((response) => response.json())
+      .then((result) => { if (result.user) showUser(result.user); })
+      .catch(() => {});
+
+    // Ջնջել բրաուզերում մնացած հին տվյալները, հիմա դրանք պահվում են սերվերում
     try {
-      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-      if (savedUser) showUser(savedUser);
+      localStorage.removeItem("registeredEmails");
+      localStorage.removeItem("currentUser");
     } catch (e) {}
   </script>
 </body>

@@ -1,832 +1,344 @@
 <!DOCTYPE html>
-<html lang="hy">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Table Book — սեղանների ամրագրում</title>
+  <title>Table Book — table booking</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
-  <style>
-    :root {
-      --bg: #f7f5f2;
-      --surface: #ffffff;
-      --text: #1f1c19;
-      --muted: #6b645c;
-      --border: #e4dfd8;
-      --accent: #b5562b;
-      --accent-soft: #f6e6dc;
-      --error: #c0392b;
-    }
-
-    [data-theme="dark"] {
-      --bg: #171513;
-      --surface: #221f1c;
-      --text: #f1ece6;
-      --muted: #a69d93;
-      --border: #3a3530;
-      --accent: #e48a5c;
-      --accent-soft: #3a2a21;
-      --error: #f07167;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 0 16px;
-    }
-
-    header {
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 16px 0;
-    }
-
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-    }
-
-    .logo span { color: var(--accent); }
-
-    nav {
-      display: flex;
-      gap: 20px;
-    }
-
-    nav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.95rem;
-    }
-
-    nav a:hover { color: var(--accent); }
-
-    .theme-toggle,
-    .outline-btn {
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .theme-toggle:hover,
-    .outline-btn:hover { border-color: var(--accent); }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .signup-btn {
-      border: none;
-      background: var(--accent);
-      color: #ffffff;
-      border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .signup-btn:hover { opacity: 0.9; }
-
-    .user-name {
-      background: var(--accent-soft);
-      color: var(--accent);
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      white-space: nowrap;
-      max-width: 160px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .user-name[hidden] { display: none; }
-
-    .toast {
-      position: fixed;
-      left: 50%;
-      bottom: 24px;
-      transform: translateX(-50%);
-      max-width: calc(100% - 32px);
-      background: var(--text);
-      color: var(--bg);
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-weight: 600;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-      z-index: 200;
-    }
-
-    .toast[hidden] { display: none; }
-
-    .hero {
-      padding: 64px 0 48px;
-    }
-
-    .hero h1 {
-      font-size: clamp(1.9rem, 5vw, 2.8rem);
-      line-height: 1.2;
-      margin: 0 0 16px;
-    }
-
-    .hero p {
-      font-size: 1.1rem;
-      color: var(--muted);
-      max-width: 620px;
-      margin: 0;
-    }
-
-    section {
-      padding: 48px 0;
-      border-top: 1px solid var(--border);
-    }
-
-    section h2 {
-      font-size: 1.6rem;
-      margin: 0 0 8px;
-    }
-
-    .section-lead {
-      color: var(--muted);
-      margin: 0 0 28px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-
-    .card h3 {
-      margin: 0 0 6px;
-      font-size: 1.05rem;
-    }
-
-    .card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-
-    .icon {
-      font-size: 1.6rem;
-      margin-bottom: 10px;
-    }
-
-    .steps {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 16px;
-    }
-
-    .steps li {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-    }
-
-    .step-num {
-      flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .steps h3 {
-      margin: 0 0 4px;
-      font-size: 1.05rem;
-    }
-
-    .steps p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 100;
-    }
-
-    .modal-overlay[hidden] { display: none; }
-
-    .modal {
-      position: relative;
-      width: 100%;
-      max-width: 440px;
-      max-height: calc(100vh - 32px);
-      overflow-y: auto;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px 24px 24px;
-    }
-
-    .modal h2 {
-      margin: 0 0 20px;
-      font-size: 1.4rem;
-    }
-
-    .modal-close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 36px;
-      height: 36px;
-      border: none;
-      background: none;
-      color: var(--muted);
-      font-size: 1.6rem;
-      line-height: 1;
-      cursor: pointer;
-      border-radius: 50%;
-    }
-
-    .modal-close:hover {
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 12px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 14px;
-    }
-
-    .field label {
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    .field input {
-      min-width: 0;
-      font: inherit;
-      color: var(--text);
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-    }
-
-    .field input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    .field.invalid input { border-color: var(--error); }
-
-    .error-msg {
-      min-height: 1.2em;
-      font-size: 0.82rem;
-      color: var(--error);
-    }
-
-    .submit-btn {
-      width: 100%;
-      border: none;
-      background: var(--accent);
-      color: #ffffff;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 6px;
-    }
-
-    .submit-btn:hover { opacity: 0.9; }
-
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    .modal-switch {
-      margin: 16px 0 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .link-btn {
-      border: none;
-      background: none;
-      padding: 0;
-      font: inherit;
-      font-weight: 600;
-      color: var(--accent);
-      cursor: pointer;
-    }
-
-    .link-btn:hover { text-decoration: underline; }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 24px 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-      text-align: center;
-    }
-
-    @media (max-width: 760px) {
-      nav { display: none; }
-    }
-
-    @media (max-width: 640px) {
-      .hero { padding: 40px 0 32px; }
-      section { padding: 36px 0; }
-      .form-row { grid-template-columns: 1fr; gap: 0; }
-    }
-
-    @media (max-width: 420px) {
-      .logo { font-size: 1.05rem; }
-      .header-actions { gap: 6px; }
-      .theme-toggle, .outline-btn, .signup-btn { padding: 6px 10px; font-size: 0.82rem; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <div class="container header-inner">
       <div class="logo">Table<span>Book</span></div>
       <nav>
-        <a href="#who">Ում համար</a>
-        <a href="#how">Ինչպես է աշխատում</a>
-        <a href="#features">Հնարավորություններ</a>
+        <a href="#who" data-i18n="navWho">Who it's for</a>
+        <a href="#how" data-i18n="navHow">Steps</a>
+        <a href="#features" data-i18n="navFeatures">Features</a>
       </nav>
       <div class="header-actions">
-        <button class="theme-toggle" id="themeToggle" type="button">🌙 Մուգ</button>
-        <button class="outline-btn" id="loginBtn" type="button">Մուտք</button>
-        <button class="signup-btn" id="signupBtn" type="button">Գրանցվել</button>
+        <select class="lang-select" id="langSelect" data-i18n-aria="langAria" aria-label="Language">
+          <option value="en">ENG</option>
+          <option value="hy">ՀԱՅ</option>
+          <option value="ru">РУС</option>
+        </select>
+        <button class="theme-toggle" id="themeToggle" type="button">🌙 Dark</button>
+        <button class="outline-btn" id="loginBtn" type="button" data-i18n="login">Log in</button>
+        <button class="signup-btn" id="signupBtn" type="button" data-i18n="signup">Sign up</button>
         <span class="user-name" id="userName" hidden></span>
-        <button class="outline-btn" id="logoutBtn" type="button" hidden>Ելք</button>
+        <a class="outline-btn admin-login-link" id="adminPanelLink" href="admin.html" hidden data-i18n="adminPanelBtn">Admin panel</a>
+        <button class="outline-btn" id="logoutBtn" type="button" hidden data-i18n="logout">Log out</button>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <main>
     <div class="hero">
-      <h1>Սեղանների ամրագրման ծրագիր փոքր սրճարանների համար</h1>
-      <p>Պարզ գործիք, որով հյուրերը կարող են առցանց ամրագրել սեղան, իսկ սրճարանը՝ հեշտությամբ կառավարել ամրագրումները մեկ տեղից։</p>
+      <div class="container">
+        <h1 data-i18n="heroTitle">TableBook</h1>
+        <p data-i18n="heroText">A simple tool: guests book a table online, and the café manages all its reservations in one place.</p>
+      </div>
     </div>
 
+    <div class="container">
+    <section id="restaurants">
+      <div class="section-head">
+        <div>
+          <h2 data-i18n="restaurantsTitle">Restaurants</h2>
+          <p class="section-lead" data-i18n="restaurantsLead">Choose where you'd like to go.</p>
+        </div>
+      </div>
+      <p class="restaurants-empty" id="restaurantsEmpty" hidden data-i18n="restaurantsEmpty">No restaurants yet.</p>
+      <div class="grid" id="restaurantGrid"></div>
+    </section>
+    </div>
+
+    <section id="booking" class="booking-band">
+      <div class="container">
+      <h2 data-i18n="bookingTitle">Booking</h2>
+      <p class="section-lead" data-i18n="bookingLead">Choose the day, time and number of guests, then pick a free table on the floor plan.</p>
+
+      <form class="booking-search" id="searchForm" novalidate>
+        <div class="field">
+          <label for="bookRestaurant" data-i18n="labelRestaurant">Restaurant</label>
+          <select id="bookRestaurant" name="restaurant"></select>
+        </div>
+        <div class="field">
+          <label for="bookDate" data-i18n="labelDate">Date</label>
+          <input type="date" id="bookDate" name="date">
+        </div>
+        <div class="field">
+          <label for="bookTime" data-i18n="labelTime">Time</label>
+          <select id="bookTime" name="time"></select>
+        </div>
+        <div class="field">
+          <label for="bookGuests" data-i18n="labelGuests">Guests</label>
+          <select id="bookGuests" name="guests"></select>
+        </div>
+        <button class="search-btn" type="submit" data-i18n="findTable">Find a free table</button>
+      </form>
+
+      <p class="booking-status" id="bookingStatus" role="status"></p>
+
+      <div class="booking-layout">
+        <div class="hall-wrap">
+          <ul class="hall-legend">
+            <li><span class="dot free"></span><span data-i18n="legendFree">Free</span></li>
+            <li><span class="dot selected"></span><span data-i18n="legendSelected">Selected</span></li>
+            <li><span class="dot busy"></span><span data-i18n="legendBusy">Taken</span></li>
+            <li><span class="dot small"></span><span data-i18n="legendSmall">Too small for your group</span></li>
+          </ul>
+          <div class="hall-scroll">
+            <div class="hall" id="hall">
+              <!-- Սրահի հատակագիծ. պատեր, պատուհաններ, դուռ, բար, բազմոց, բույսեր -->
+              <svg class="hall-plan" viewBox="0 0 160 100" aria-hidden="true">
+                <defs>
+                  <pattern id="planTiles" width="5" height="5" patternUnits="userSpaceOnUse">
+                    <path d="M5 0H0V5" fill="none" class="plan-grid"/>
+                  </pattern>
+                </defs>
+                <rect x="2" y="2" width="156" height="96" class="plan-floor"/>
+                <rect x="2" y="2" width="156" height="96" fill="url(#planTiles)"/>
+
+                <!-- Պատեր -->
+                <rect x="2" y="2" width="156" height="96" class="plan-wall"/>
+
+                <!-- Պատուհաններ վերևի պատում -->
+                <g class="plan-window">
+                  <rect x="9" y="0.8" width="18" height="2.4"/>
+                  <rect x="33" y="0.8" width="18" height="2.4"/>
+                  <rect x="57" y="0.8" width="18" height="2.4"/>
+                  <rect x="81" y="0.8" width="18" height="2.4"/>
+                </g>
+
+                <!-- Մուտքի դուռ և բացվելու աղեղը -->
+                <rect x="131" y="96.8" width="15" height="2.4" class="plan-floor"/>
+                <line x1="131" y1="98" x2="131" y2="84" class="plan-door"/>
+                <path d="M131 84 A14 14 0 0 1 145 98" class="plan-door-arc"/>
+
+                <!-- Բար՝ դարակով և աթոռակներով -->
+                <rect x="151" y="6" width="5" height="58" rx="1" class="plan-shelf"/>
+                <rect x="136" y="8" width="12" height="54" rx="2" class="plan-bar"/>
+                <g class="plan-stool">
+                  <circle cx="131" cy="14" r="2.2"/>
+                  <circle cx="131" cy="24" r="2.2"/>
+                  <circle cx="131" cy="34" r="2.2"/>
+                  <circle cx="131" cy="44" r="2.2"/>
+                  <circle cx="131" cy="54" r="2.2"/>
+                </g>
+
+                <!-- Բորդո բազմոց ձախ անկյունում -->
+                <path d="M3 62 H9 V91 H16 V97 H3 Z" class="plan-sofa"/>
+
+                <!-- Բույսեր -->
+                <g class="plan-plant">
+                  <circle cx="7" cy="33" r="3.2"/>
+                  <circle cx="118" cy="93" r="3.2"/>
+                  <circle cx="106" cy="6.5" r="3"/>
+                </g>
+              </svg>
+              <div class="hall-window" data-i18n="hallWindows">Windows</div>
+              <div class="hall-bar" data-i18n="hallBar">Bar</div>
+              <div class="hall-door" data-i18n="hallDoor">Entrance</div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="table-panel" aria-live="polite">
+          <div id="panelEmpty">
+            <h3 data-i18n="panelChoose">Choose a table</h3>
+            <p data-i18n="panelChooseText">Click a free table on the plan to see its details.</p>
+          </div>
+          <div id="panelDetails" hidden>
+            <p class="panel-zone" id="panelZone"></p>
+            <h3 id="panelTitle"></h3>
+            <p class="panel-desc" id="panelDesc"></p>
+            <dl class="panel-facts">
+              <div><dt data-i18n="factSeats">Seats</dt><dd id="panelSeats"></dd></div>
+              <div><dt data-i18n="factDate">Date</dt><dd id="panelDate"></dd></div>
+              <div><dt data-i18n="factTime">Time</dt><dd id="panelTime"></dd></div>
+              <div><dt data-i18n="factGuests">Guests</dt><dd id="panelGuests"></dd></div>
+            </dl>
+            <button class="search-btn" id="bookBtn" type="button" data-i18n="bookNow">Book</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="my-bookings" id="myBookings" hidden>
+        <h3 data-i18n="myBookingsTitle">My bookings</h3>
+        <p class="my-bookings-note" data-i18n="cancelRule">You can cancel a booking up to 1 hour before it starts.</p>
+        <p class="my-bookings-empty" id="myBookingsEmpty" data-i18n="myBookingsEmpty" hidden>You have no bookings yet.</p>
+        <ul class="my-bookings-list" id="myBookingsList"></ul>
+      </div>
+      </div>
+    </section>
+
+    <div class="container">
     <section id="who">
-      <h2>Ում համար է</h2>
-      <p class="section-lead">Ծրագիրը նախատեսված է փոքր հաստատությունների համար, որոնք չունեն բարդ համակարգերի կարիք։</p>
+      <h2 data-i18n="whoTitle">Who it's for</h2>
+      <p class="section-lead" data-i18n="whoLead">Made for small venues that don't need complicated systems.</p>
       <div class="grid">
-        <div class="card">
-          <div class="icon">☕</div>
-          <h3>Փոքր սրճարաններ</h3>
-          <p>Մի քանի սեղան ունեցող հաստատություններ, որոնք ուզում են խուսափել հեռախոսային ամրագրումների շփոթից։</p>
+        <div class="card photo-card">
+          <img src="https://images.unsplash.com/photo-1753727471014-efe38840c7c7?w=700&q=70&auto=format&fit=crop" alt="Restaurant hall with burgundy velvet armchairs" data-i18n-alt="who1Alt" loading="lazy">
+          <h3 data-i18n="who1Title">Small cafés</h3>
+          <p data-i18n="who1Text">Places with a few tables that want to avoid the mess of phone bookings.</p>
         </div>
-        <div class="card">
-          <div class="icon">🧑‍🍳</div>
-          <h3>Սեփականատերեր և մենեջերներ</h3>
-          <p>Նրանք, ովքեր ուզում են մեկ էկրանում տեսնել օրվա բոլոր ամրագրումները։</p>
+        <div class="card photo-card">
+          <img src="https://images.unsplash.com/photo-1552960226-639240203497?w=700&q=70&auto=format&fit=crop" alt="Classic hall with warm lighting" data-i18n-alt="who2Alt" loading="lazy">
+          <h3 data-i18n="who2Title">Owners</h3>
+          <p data-i18n="who2Text">People who want to see all of the day's bookings on one screen.</p>
         </div>
-        <div class="card">
-          <div class="icon">🙋</div>
-          <h3>Հյուրեր</h3>
-          <p>Մարդիկ, ովքեր ուզում են արագ ամրագրել սեղան առանց զանգելու։</p>
+        <div class="card photo-card">
+          <img src="https://images.unsplash.com/photo-1771574205963-0c1d84ac7354?w=700&q=70&auto=format&fit=crop" alt="Elegant hall with red chairs and decorative lights" data-i18n-alt="who3Alt" loading="lazy">
+          <h3 data-i18n="who3Title">Guests</h3>
+          <p data-i18n="who3Text">People who want to book a table quickly without calling.</p>
         </div>
       </div>
     </section>
 
     <section id="how">
-      <h2>Ինչպես է աշխատում</h2>
-      <p class="section-lead">Ամրագրումը տևում է ընդամենը մի քանի քայլ։</p>
+      <h2 data-i18n="howTitle">Steps</h2>
+      <p class="section-lead" data-i18n="howLead">Booking takes just a few steps.</p>
       <ol class="steps">
         <li>
           <div class="step-num">1</div>
           <div>
-            <h3>Հյուրն ընտրում է օրն ու ժամը</h3>
-            <p>Կայքում ընտրում է ցանկալի ամսաթիվը, ժամը և հյուրերի քանակը։</p>
+            <h3 data-i18n="how1Title">Pick a time</h3>
+            <p data-i18n="how1Text">Chooses the date, time and number of guests on the site.</p>
           </div>
         </li>
         <li>
           <div class="step-num">2</div>
           <div>
-            <h3>Ընտրում է ազատ սեղան</h3>
-            <p>Ծրագիրը ցույց է տալիս միայն այն սեղանները, որոնք ազատ են ընտրված ժամին։</p>
+            <h3 data-i18n="how2Title">Choose a table</h3>
+            <p data-i18n="how2Text">The system shows only the tables that are free at the chosen time.</p>
           </div>
         </li>
         <li>
           <div class="step-num">3</div>
           <div>
-            <h3>Լրացնում է տվյալները</h3>
-            <p>Նշում է անունը և հեռախոսահամարը, ապա հաստատում ամրագրումը։</p>
+            <h3 data-i18n="how3Title">Add details</h3>
+            <p data-i18n="how3Text">Enters a name and phone number, then confirms the booking.</p>
           </div>
         </li>
         <li>
           <div class="step-num">4</div>
           <div>
-            <h3>Սրճարանը տեսնում է ամրագրումը</h3>
-            <p>Ամրագրումն անմիջապես հայտնվում է սրճարանի կառավարման էջում, որտեղ այն կարելի է հաստատել կամ չեղարկել։</p>
+            <h3 data-i18n="how4Title">Café confirms</h3>
+            <p data-i18n="how4Text">The booking appears right away on the café's admin page, where it can be confirmed or cancelled.</p>
           </div>
         </li>
       </ol>
     </section>
 
     <section id="features">
-      <h2>Նախագծի հնարավորությունները</h2>
-      <p class="section-lead">Այն ամենը, ինչ անհրաժեշտ է փոքր սրճարանին։</p>
+      <h2 data-i18n="featTitle">Features</h2>
+      <p class="section-lead" data-i18n="featLead">Everything a small café needs.</p>
       <div class="grid">
         <div class="card">
           <div class="icon">📅</div>
-          <h3>Առցանց ամրագրում</h3>
-          <p>Հյուրերը կարող են սեղան ամրագրել օրվա ցանկացած ժամի։</p>
+          <h3 data-i18n="feat1Title">Online booking</h3>
+          <p data-i18n="feat1Text">Guests can book a table at any time of day.</p>
         </div>
         <div class="card">
           <div class="icon">🪑</div>
-          <h3>Սեղանների կառավարում</h3>
-          <p>Ավելացրեք սեղաններ, նշեք նստատեղերի քանակը և տեղադրությունը։</p>
+          <h3 data-i18n="feat2Title">Tables</h3>
+          <p data-i18n="feat2Text">Add tables and set their number of seats and location.</p>
         </div>
         <div class="card">
           <div class="icon">⏰</div>
-          <h3>Ազատ ժամերի ստուգում</h3>
-          <p>Համակարգը թույլ չի տալիս նույն սեղանը կրկնակի ամրագրել նույն ժամին։</p>
+          <h3 data-i18n="feat3Title">No double booking</h3>
+          <p data-i18n="feat3Text">The system won't let the same table be booked twice for the same time.</p>
         </div>
         <div class="card">
           <div class="icon">📋</div>
-          <h3>Ամրագրումների ցուցակ</h3>
-          <p>Օրվա բոլոր ամրագրումները մեկ էջում՝ ըստ ժամի դասավորված։</p>
+          <h3 data-i18n="feat4Title">Booking list</h3>
+          <p data-i18n="feat4Text">All of the day's bookings on one page, sorted by time.</p>
         </div>
         <div class="card">
           <div class="icon">✅</div>
-          <h3>Հաստատում և չեղարկում</h3>
-          <p>Սրճարանը կարող է հաստատել, փոխել կամ չեղարկել ցանկացած ամրագրում։</p>
+          <h3 data-i18n="feat5Title">Confirm &amp; cancel</h3>
+          <p data-i18n="feat5Text">The café can confirm, change or cancel any booking.</p>
         </div>
         <div class="card">
           <div class="icon">📱</div>
-          <h3>Հարմար բոլոր սարքերում</h3>
-          <p>Աշխատում է համակարգչում, պլանշետում և հեռախոսում, բաց և մուգ ռեժիմներով։</p>
+          <h3 data-i18n="feat6Title">Any device</h3>
+          <p data-i18n="feat6Text">Works on computers, tablets and phones, in light and dark mode.</p>
         </div>
       </div>
     </section>
+    </div>
   </main>
 
   <div class="modal-overlay" id="signupModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signupTitle">
-      <button class="modal-close" type="button" aria-label="Փակել">×</button>
-      <h2 id="signupTitle">Գրանցում</h2>
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="signupTitle" data-i18n="signupTitle">Sign up</h2>
       <form id="signupForm" novalidate>
         <div class="form-row">
           <div class="field">
-            <label for="firstName">Անուն</label>
+            <label for="firstName" data-i18n="labelFirstName">First name</label>
             <input type="text" id="firstName" name="firstName" autocomplete="given-name">
             <small class="error-msg" id="firstNameError"></small>
           </div>
           <div class="field">
-            <label for="lastName">Ազգանուն</label>
+            <label for="lastName" data-i18n="labelLastName">Last name</label>
             <input type="text" id="lastName" name="lastName" autocomplete="family-name">
             <small class="error-msg" id="lastNameError"></small>
           </div>
         </div>
         <div class="field">
-          <label for="email">Email</label>
+          <label for="email" data-i18n="labelEmail">Email</label>
           <input type="email" id="email" name="email" autocomplete="email">
           <small class="error-msg" id="emailError"></small>
         </div>
         <div class="field">
-          <label for="password">Գաղտնաբառ</label>
+          <label for="password" data-i18n="labelPassword">Password</label>
           <input type="password" id="password" name="password" autocomplete="new-password">
           <small class="error-msg" id="passwordError"></small>
         </div>
         <div class="field">
-          <label for="passwordConfirm">Կրկնեք գաղտնաբառը</label>
+          <label for="passwordConfirm" data-i18n="labelPasswordConfirm">Repeat password</label>
           <input type="password" id="passwordConfirm" name="passwordConfirm" autocomplete="new-password">
           <small class="error-msg" id="passwordConfirmError"></small>
         </div>
-        <button class="submit-btn" type="submit">Գրանցվել</button>
+        <button class="submit-btn" type="submit" data-i18n="signupSubmit">Sign up</button>
       </form>
-      <p class="modal-switch">Արդեն ունե՞ք հաշիվ։ <button class="link-btn" type="button" data-open="loginModal">Մուտք գործել</button></p>
+      <p class="modal-switch"><span data-i18n="haveAccount">Already have an account?</span> <button class="link-btn" type="button" data-open="loginModal" data-i18n="loginLink">Log in</button></p>
     </div>
   </div>
 
   <div class="modal-overlay" id="loginModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-      <button class="modal-close" type="button" aria-label="Փակել">×</button>
-      <h2 id="loginTitle">Մուտք</h2>
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="loginTitle" data-i18n="loginTitle">Log in</h2>
       <form id="loginForm" novalidate>
         <div class="field">
-          <label for="loginEmail">Email</label>
+          <label for="loginEmail" data-i18n="labelEmail">Email</label>
           <input type="email" id="loginEmail" name="email" autocomplete="email">
           <small class="error-msg" id="loginEmailError"></small>
         </div>
         <div class="field">
-          <label for="loginPassword">Գաղտնաբառ</label>
+          <label for="loginPassword" data-i18n="labelPassword">Password</label>
           <input type="password" id="loginPassword" name="password" autocomplete="current-password">
           <small class="error-msg" id="loginPasswordError"></small>
         </div>
-        <button class="submit-btn" type="submit">Մուտք գործել</button>
+        <button class="submit-btn" type="submit" data-i18n="loginSubmit">Log in</button>
       </form>
-      <p class="modal-switch">Դեռ հաշիվ չունե՞ք։ <button class="link-btn" type="button" data-open="signupModal">Գրանցվել</button></p>
+      <p class="modal-switch"><span data-i18n="noAccount">Don't have an account yet?</span> <button class="link-btn" type="button" data-open="signupModal" data-i18n="signupLink">Sign up</button></p>
     </div>
   </div>
 
   <div class="toast" id="toast" role="status" hidden></div>
 
   <footer>
-    <div class="container">TableBook · Սեղանների ամրագրում փոքր սրճարանների համար</div>
+    <div class="container">
+      <span data-i18n="footerText">TableBook · Table booking for small cafés</span>
+      <span class="photo-credit"><span data-i18n="photosBy">Photos:</span> <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></span>
+    </div>
   </footer>
 
-  <script>
-    const root = document.documentElement;
-    const toggle = document.getElementById("themeToggle");
-
-    function applyTheme(theme) {
-      root.setAttribute("data-theme", theme);
-      toggle.textContent = theme === "dark" ? "☀️ Բաց" : "🌙 Մուգ";
-    }
-
-    let saved = null;
-    try { saved = localStorage.getItem("theme"); } catch (e) {}
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    applyTheme(saved || (prefersDark ? "dark" : "light"));
-
-    toggle.addEventListener("click", () => {
-      const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-      applyTheme(next);
-      try { localStorage.setItem("theme", next); } catch (e) {}
-    });
-
-    const signupBtn = document.getElementById("signupBtn");
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const signupModal = document.getElementById("signupModal");
-    const loginModal = document.getElementById("loginModal");
-    let openedModal = null;
-    let lastFocused = null;
-
-    function openModal(modal) {
-      if (openedModal) openedModal.hidden = true;
-      else lastFocused = document.activeElement;
-      openedModal = modal;
-      modal.hidden = false;
-      modal.querySelector("input").focus();
-    }
-
-    function closeModal() {
-      if (!openedModal) return;
-      openedModal.hidden = true;
-      openedModal = null;
-      if (lastFocused && !lastFocused.hidden) lastFocused.focus();
-    }
-
-    signupBtn.addEventListener("click", () => openModal(signupModal));
-    loginBtn.addEventListener("click", () => openModal(loginModal));
-
-    document.querySelectorAll(".modal-close").forEach((btn) => {
-      btn.addEventListener("click", closeModal);
-    });
-
-    // Անցում «Գրանցում» և «Մուտք» պատուհանների միջև
-    document.querySelectorAll("[data-open]").forEach((btn) => {
-      btn.addEventListener("click", () => openModal(document.getElementById(btn.dataset.open)));
-    });
-
-    // Փակել, երբ սեղմում են պատուհանից դուրս՝ մուգ ֆոնի վրա
-    [signupModal, loginModal].forEach((modal) => {
-      modal.addEventListener("click", (event) => {
-        if (event.target === modal) closeModal();
-      });
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeModal();
-    });
-
-    const NETWORK_ERROR = "Չհաջողվեց կապվել սերվերի հետ։ Փորձեք կրկին։";
-
-    async function postJson(url, data) {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      return { ok: response.ok, result: await response.json() };
-    }
-
-    const signupForm = document.getElementById("signupForm");
-
-    function showError(fieldId, message) {
-      document.getElementById(fieldId + "Error").textContent = message;
-      document.getElementById(fieldId).parentElement.classList.toggle("invalid", message !== "");
-    }
-
-    function validateForm() {
-      const firstName = signupForm.firstName.value.trim();
-      const lastName = signupForm.lastName.value.trim();
-      const email = signupForm.email.value.trim().toLowerCase();
-      const password = signupForm.password.value;
-      const passwordConfirm = signupForm.passwordConfirm.value;
-      const errors = {};
-
-      if (!firstName) errors.firstName = "Գրեք ձեր անունը";
-      if (!lastName) errors.lastName = "Գրեք ձեր ազգանունը";
-
-      if (!email) {
-        errors.email = "Գրեք ձեր email-ը";
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        errors.email = "Email-ը սխալ է գրված";
-      }
-
-      if (!password) {
-        errors.password = "Գրեք գաղտնաբառ";
-      } else if (password.length < 6) {
-        errors.password = "Գաղտնաբառը պետք է լինի առնվազն 6 նիշ";
-      }
-
-      if (!passwordConfirm) {
-        errors.passwordConfirm = "Կրկնեք գաղտնաբառը";
-      } else if (password !== passwordConfirm) {
-        errors.passwordConfirm = "Գաղտնաբառերը չեն համընկնում";
-      }
-
-      ["firstName", "lastName", "email", "password", "passwordConfirm"].forEach((id) => {
-        showError(id, errors[id] || "");
-      });
-
-      return Object.keys(errors).length === 0 ? { firstName, lastName, email, password } : null;
-    }
-
-    // Դաշտում գրելիս հանել տվյալ դաշտի սխալը
-    signupForm.addEventListener("input", (event) => {
-      showError(event.target.id, "");
-    });
-
-    const submitBtn = signupForm.querySelector(".submit-btn");
-
-    // Ուղարկել տվյալները սերվերին, որը դրանք պահում է տվյալների բազայում
-    signupForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const formData = validateForm();
-      if (!formData) return;
-
-      submitBtn.disabled = true;
-      try {
-        const { ok, result } = await postJson("/api/signup", formData);
-
-        if (!ok) {
-          Object.entries(result.errors || {}).forEach(([id, message]) => showError(id, message));
-          if (result.error) showToast(result.error);
-          return;
-        }
-
-        signupForm.reset();
-        closeModal();
-        showUser(result.user);
-        showToast("Բարի գալուստ, " + result.user.firstName + "։ Գրանցումը հաջողվեց։");
-      } catch (e) {
-        showToast(NETWORK_ERROR);
-      } finally {
-        submitBtn.disabled = false;
-      }
-    });
-
-    const loginForm = document.getElementById("loginForm");
-    const loginSubmitBtn = loginForm.querySelector(".submit-btn");
-
-    loginForm.addEventListener("input", (event) => {
-      showError(event.target.id, "");
-    });
-
-    loginForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const email = loginForm.email.value.trim();
-      const password = loginForm.password.value;
-
-      showError("loginEmail", email ? "" : "Գրեք ձեր email-ը");
-      showError("loginPassword", password ? "" : "Գրեք գաղտնաբառը");
-      if (!email || !password) return;
-
-      loginSubmitBtn.disabled = true;
-      try {
-        const { ok, result } = await postJson("/api/login", { email, password });
-
-        if (!ok) {
-          showError("loginPassword", result.error || NETWORK_ERROR);
-          return;
-        }
-
-        loginForm.reset();
-        closeModal();
-        showUser(result.user);
-        showToast("Բարի վերադարձ, " + result.user.firstName + "։");
-      } catch (e) {
-        showToast(NETWORK_ERROR);
-      } finally {
-        loginSubmitBtn.disabled = false;
-      }
-    });
-
-    logoutBtn.addEventListener("click", async () => {
-      try {
-        await postJson("/api/logout", {});
-        showGuest();
-        showToast("Դուք դուրս եկաք հաշվից։");
-      } catch (e) {
-        showToast(NETWORK_ERROR);
-      }
-    });
-
-    const userName = document.getElementById("userName");
-    const toast = document.getElementById("toast");
-    let toastTimer;
-
-    // «Մուտք» և «Գրանցվել» կոճակների փոխարեն ցույց տալ օգտատիրոջ անունը և «Ելք» կոճակը
-    function showUser(user) {
-      userName.textContent = "👤 " + user.firstName + " " + user.lastName;
-      userName.hidden = false;
-      logoutBtn.hidden = false;
-      loginBtn.hidden = true;
-      signupBtn.hidden = true;
-    }
-
-    function showGuest() {
-      userName.hidden = true;
-      logoutBtn.hidden = true;
-      loginBtn.hidden = false;
-      signupBtn.hidden = false;
-      loginBtn.focus();
-    }
-
-    function showToast(message) {
-      toast.textContent = message;
-      toast.hidden = false;
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { toast.hidden = true; }, 4000);
-    }
-
-    // Էջը բացելիս սերվերից ստուգել՝ արդյոք օգտատերը մուտք է գործած
-    fetch("/api/me")
-      .then((response) => response.json())
-      .then((result) => { if (result.user) showUser(result.user); })
-      .catch(() => {});
-
-    // Ջնջել բրաուզերում մնացած հին տվյալները, հիմա դրանք պահվում են սերվերում
-    try {
-      localStorage.removeItem("registeredEmails");
-      localStorage.removeItem("currentUser");
-    } catch (e) {}
-  </script>
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

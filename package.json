@@ -4,7 +4,9 @@
   "description": "TableBook — table reservation page",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "make-admin": "node make-admin.js",
+    "seed": "node seeders/super-admin.js"
   },
   "engines": {
     "node": ">=22.13"

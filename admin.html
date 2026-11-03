@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TableBook — admin panel</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="container header-inner">
+      <a class="logo logo-link" href="/">Table<span>Book</span> <span class="admin-tag" data-i18n="adminTag">Admin</span></a>
+      <div class="header-actions">
+        <a class="outline-btn admin-login-link" href="/" data-i18n="mainPageBtn">Main page</a>
+        <select class="lang-select" id="langSelect" data-i18n-aria="langAria" aria-label="Language">
+          <option value="en">ENG</option>
+          <option value="hy">ՀԱՅ</option>
+          <option value="ru">РУС</option>
+        </select>
+        <button class="theme-toggle" id="themeToggle" type="button">🌙 Dark</button>
+        <span class="user-name" id="adminName" hidden></span>
+        <button class="outline-btn" id="logoutBtn" type="button" hidden data-i18n="logout">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Մուտքի պատուհան -->
+    <section class="admin-box" id="loginView" hidden>
+      <h1 data-i18n="adminLoginTitle">Admin login</h1>
+      <p class="section-lead" data-i18n="adminLoginLead">For staff only.</p>
+      <form id="adminLoginForm" novalidate>
+        <div class="field">
+          <label for="adminEmail" data-i18n="labelEmail">Email</label>
+          <input type="email" id="adminEmail" name="email" autocomplete="username">
+          <small class="error-msg" id="adminEmailError"></small>
+        </div>
+        <div class="field">
+          <label for="adminPassword" data-i18n="labelPassword">Password</label>
+          <input type="password" id="adminPassword" name="password" autocomplete="current-password">
+          <small class="error-msg" id="adminPasswordError"></small>
+        </div>
+        <button class="submit-btn" type="submit" data-i18n="loginSubmit">Log in</button>
+      </form>
+    </section>
+
+    <!-- Մուտք է գործել ոչ ադմին -->
+    <section class="admin-box" id="deniedView" hidden>
+      <h1 data-i18n="accessDenied">Access denied</h1>
+      <p class="section-lead" data-i18n="accessDeniedText">This account is not an admin. Log out and log in with an admin account.</p>
+    </section>
+
+    <!-- Ադմինի պանել -->
+    <section id="panelView" hidden>
+      <h1 id="adminWelcome"></h1>
+
+      <!-- Բոլոր հյուրերի առաջիկա ամրագրումները՝ «Հաստատել» կոճակով -->
+      <div class="admin-section">
+        <h2 data-i18n="adminBookingsTitle">Bookings</h2>
+        <p class="restaurants-empty" id="adminBookingsEmpty" hidden data-i18n="adminBookingsEmpty">No upcoming bookings.</p>
+        <ul class="my-bookings-list" id="adminBookingsList"></ul>
+      </div>
+
+      <!-- Ռեստորաններ. սեղանների զբաղվածությունը և ցուցակի կառավարումը -->
+      <div class="admin-section" id="restaurantsSection">
+        <div class="section-head">
+          <h2 data-i18n="restaurantsTitle">Restaurants</h2>
+          <button class="search-btn" id="addRestaurantBtn" type="button" data-i18n="addRestaurant">+ Add restaurant</button>
+        </div>
+
+        <!-- Ազատ և զբաղված սեղաններ՝ ընտրված ռեստորանում և օրում (կամ կոնկրետ ժամին) -->
+        <div class="admin-tables" id="adminTables">
+          <h3 data-i18n="adminTablesTitle">Free and busy tables</h3>
+          <form class="booking-search admin-tables-search" id="adminTablesForm" novalidate>
+            <div class="field">
+              <label for="atRestaurant" data-i18n="labelRestaurant">Restaurant</label>
+              <select id="atRestaurant" name="restaurant"></select>
+            </div>
+            <div class="field">
+              <label for="atDate" data-i18n="labelDate">Date</label>
+              <input type="date" id="atDate" name="date">
+            </div>
+            <div class="field">
+              <label for="atTime" data-i18n="labelTime">Time</label>
+              <select id="atTime" name="time">
+                <option value="" data-i18n="allDay">All day</option>
+              </select>
+            </div>
+          </form>
+          <p class="booking-status" id="adminTablesSummary" role="status"></p>
+          <div class="admin-tables-grid" id="adminTablesGrid"></div>
+        </div>
+
+        <p class="restaurants-empty" id="restaurantsEmpty" hidden data-i18n="restaurantsEmpty">No restaurants yet.</p>
+        <div class="grid" id="restaurantGrid"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="restaurantModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="restaurantFormTitle">
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="restaurantFormTitle"></h2>
+      <form id="restaurantForm" novalidate>
+        <div class="field">
+          <label for="rName" data-i18n="labelName">Name</label>
+          <input type="text" id="rName" name="name" maxlength="80">
+          <small class="error-msg" id="rNameError"></small>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="rCuisine" data-i18n="labelCuisine">Cuisine</label>
+            <input type="text" id="rCuisine" name="cuisine" maxlength="40">
+            <small class="error-msg" id="rCuisineError"></small>
+          </div>
+          <div class="field">
+            <label for="rAddress" data-i18n="labelAddress">Address</label>
+            <input type="text" id="rAddress" name="address" maxlength="120">
+            <small class="error-msg" id="rAddressError"></small>
+          </div>
+        </div>
+        <div class="field">
+          <label for="rDescription" data-i18n="labelDescription">Description</label>
+          <textarea id="rDescription" name="description" rows="3" maxlength="300"></textarea>
+          <small class="error-msg" id="rDescriptionError"></small>
+        </div>
+        <div class="field">
+          <label for="rImageUrl" data-i18n="labelImage">Photo link (https://…)</label>
+          <input type="url" id="rImageUrl" name="imageUrl" maxlength="500">
+          <small class="error-msg" id="rImageUrlError"></small>
+        </div>
+        <button class="submit-btn" type="submit" data-i18n="saveBtn">Save</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="i18n.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

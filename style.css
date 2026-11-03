@@ -1,0 +1,1126 @@
+:root {
+  --bg: #f3efe9;
+  --surface: #fbf9f6;
+  --text: #2e2a25;
+  --muted: #6e665c;
+  --border: #e2dbd1;
+  --accent: #8a6a4f;
+  --on-accent: #ffffff;
+  --accent-soft: #efe6dc;
+  --error: #a4513f;
+  --free: #8a6a4f;
+  --selected: #7d3b45;
+  --on-selected: #fbf6f2;
+  --busy: #b9b0a5;
+  --veil: rgba(243, 239, 233, 0.9);
+  --plan-floor: #f7f3ed;
+  --plan-grid: rgba(110, 102, 92, 0.1);
+  --plan-wall: #4d433b;
+  --plan-window: #a9c1ca;
+  --plan-bar: #74323d;
+  --plan-shelf: #5a2730;
+  --plan-sofa: #7d3b45;
+  --plan-plant: #8aa58c;
+  --plan-chair: #c2ad97;
+}
+
+[data-theme="dark"] {
+  --bg: #1b1916;
+  --surface: #24211d;
+  --text: #ebe5dc;
+  --muted: #a39889;
+  --border: #38332d;
+  --accent: #c9a882;
+  --on-accent: #1b1916;
+  --accent-soft: #3a3129;
+  --error: #d88a78;
+  --free: #c9a882;
+  --selected: #b0606c;
+  --on-selected: #1b1916;
+  --busy: #5a534b;
+  --veil: rgba(27, 25, 22, 0.9);
+  --plan-floor: #211e1b;
+  --plan-grid: rgba(235, 229, 220, 0.06);
+  --plan-wall: #cfc4b6;
+  --plan-window: #6f8f9a;
+  --plan-bar: #8f4a55;
+  --plan-shelf: #6a3540;
+  --plan-sofa: #8f4a55;
+  --plan-plant: #6f8f72;
+  --plan-chair: #6b5c4f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  transition: background 0.2s, color 0.2s;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.logo span { color: var(--accent); }
+
+nav {
+  display: flex;
+  gap: 20px;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+nav a:hover { color: var(--accent); }
+
+.lang-select,
+.theme-toggle,
+.outline-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lang-select:hover,
+.theme-toggle:hover,
+.outline-btn:hover { border-color: var(--accent); }
+
+.lang-select {
+  font-family: inherit;
+  padding-right: 10px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.signup-btn {
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.signup-btn:hover { opacity: 0.9; }
+
+.user-name {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-name[hidden] { display: none; }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 200;
+}
+
+.toast[hidden] { display: none; }
+
+.hero {
+  padding: 64px 0 48px;
+}
+
+.hero h1 {
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+
+.hero p {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 34em;
+  margin: 0;
+}
+
+section {
+  padding: 48px 0;
+  border-top: 1px solid var(--border);
+}
+
+section h2 {
+  font-size: 1.6rem;
+  margin: 0 0 8px;
+}
+
+.section-lead {
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.icon {
+  font-size: 1.6rem;
+  margin-bottom: 10px;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.steps li {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.steps h3 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.steps p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+}
+
+.modal h2 {
+  margin: 0 0 20px;
+  font-size: 1.4rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.modal-close:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.field input {
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field.invalid input { border-color: var(--error); }
+
+.error-msg {
+  min-height: 1.2em;
+  font-size: 0.82rem;
+  color: var(--error);
+}
+
+.submit-btn {
+  width: 100%;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.submit-btn:hover { opacity: 0.9; }
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.modal-switch {
+  margin: 16px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.link-btn:hover { text-decoration: underline; }
+
+.booking-search {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.booking-search .field { margin-bottom: 0; }
+
+.booking-search select {
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.booking-search select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.search-btn {
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 8px;
+  padding: 11px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.search-btn:hover { opacity: 0.9; }
+
+.search-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.booking-status {
+  margin: 20px 0 0;
+  color: var(--muted);
+}
+
+.booking-status:empty { display: none; }
+
+/* ---------- Լուսանկարներ ---------- */
+
+.hero {
+  min-height: 420px;
+  padding: 20px 0 0;
+  color: #f6f1ea;
+  background:
+    linear-gradient(160deg, rgba(30, 20, 20, 0.7) 0%, rgba(30, 20, 20, 0.25) 45%, rgba(30, 20, 20, 0.1) 100%),
+    url("https://images.unsplash.com/photo-1785845506893-70768a28ba44?w=1800&q=70&auto=format&fit=crop") center / cover no-repeat;
+}
+
+.hero p { color: rgba(246, 241, 234, 0.92); }
+
+/* Տեքստը նկարի հենց վերևի ձախ անկյունում, ոչ թե էջի կենտրոնական սյունակում */
+.hero .container {
+  max-width: none;
+  margin: 0;
+  padding: 0 32px;
+}
+
+.hero h1,
+.hero p { text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45); }
+
+.booking-band {
+  background:
+    linear-gradient(var(--veil), var(--veil)),
+    url("https://images.unsplash.com/photo-1687648431656-da99da578d50?w=1800&q=60&auto=format&fit=crop") center / cover no-repeat;
+}
+
+.photo-card {
+  overflow: hidden;
+  padding: 0 0 20px;
+}
+
+.photo-card img {
+  display: block;
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  margin-bottom: 14px;
+}
+
+.photo-card h3,
+.photo-card p { padding: 0 20px; }
+
+.photo-credit {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
+.photo-credit a { color: var(--muted); }
+
+/* ---------- Սրահի սխեմա ---------- */
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.hall-wrap {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.hall-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0 0 12px;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.dot.free { background: var(--free); }
+.dot.selected { background: var(--selected); }
+.dot.busy { background: var(--busy); }
+.dot.small { border: 2px dashed var(--busy); }
+
+.hall-scroll { overflow-x: auto; }
+
+.hall {
+  position: relative;
+  min-width: 560px;
+  aspect-ratio: 16 / 10;
+}
+
+/* Հատակագծի գծանկարը (պատեր, պատուհաններ, դուռ, բար, բազմոց, բույսեր) */
+.hall-plan {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.plan-floor { fill: var(--plan-floor); }
+
+.plan-grid {
+  stroke: var(--plan-grid);
+  stroke-width: 0.3;
+}
+
+.plan-wall {
+  fill: none;
+  stroke: var(--plan-wall);
+  stroke-width: 2.4;
+}
+
+.plan-window rect { fill: var(--plan-window); }
+
+.plan-door {
+  stroke: var(--plan-wall);
+  stroke-width: 0.8;
+}
+
+.plan-door-arc {
+  fill: none;
+  stroke: var(--plan-wall);
+  stroke-width: 0.4;
+  stroke-dasharray: 1.5 1;
+}
+
+.plan-bar {
+  fill: var(--plan-bar);
+  stroke: var(--plan-wall);
+  stroke-width: 0.4;
+}
+
+.plan-shelf { fill: var(--plan-shelf); }
+.plan-stool circle { fill: var(--plan-chair); }
+.plan-sofa { fill: var(--plan-sofa); }
+
+.plan-plant circle {
+  fill: var(--plan-plant);
+  stroke: var(--plan-floor);
+  stroke-width: 0.6;
+  stroke-dasharray: 1.2 0.8;
+}
+
+.hall-window,
+.hall-bar,
+.hall-door {
+  position: absolute;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+
+.hall-window {
+  top: 4.5%;
+  left: 5.6%;
+  width: 56.4%;
+}
+
+.hall-bar {
+  left: 85%;
+  top: 8%;
+  width: 7.5%;
+  height: 54%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3e9e4;
+  writing-mode: vertical-rl;
+}
+
+.hall-door {
+  left: 81.9%;
+  bottom: 3.5%;
+  width: 9.4%;
+}
+
+.hall-table {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.hall-table .top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--border);
+  color: var(--muted);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.t-num {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+.t-seats { font-size: 0.7rem; }
+
+.seats-2 .top { width: 52px; height: 52px; border-radius: 50%; }
+.seats-4 .top { width: 64px; height: 64px; border-radius: 10px; }
+.seats-6 .top { width: 116px; height: 58px; border-radius: 12px; }
+.seats-8 .top { width: 156px; height: 62px; border-radius: 14px; }
+
+.chair {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--plan-chair);
+  opacity: 0.8;
+  transform: translate(-50%, -50%);
+}
+
+.hall-table.free .top {
+  background: var(--free);
+  color: var(--surface);
+}
+
+.hall-table.free:hover .top { transform: scale(1.05); }
+
+.hall-table.selected .top {
+  background: var(--selected);
+  color: var(--on-selected);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.hall-table.busy .top {
+  background: var(--busy);
+  color: var(--surface);
+}
+
+.hall-table.small .top {
+  background: transparent;
+  border: 2px dashed var(--busy);
+  color: var(--muted);
+}
+
+.hall-table:disabled { cursor: not-allowed; }
+
+.hall-table:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 8px;
+  border-radius: 12px;
+}
+
+.table-panel {
+  align-self: start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.table-panel h3 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.table-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.table-panel .panel-zone {
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.panel-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.panel-facts div {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.panel-facts dt {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.panel-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.table-panel .search-btn { width: 100%; }
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  nav { display: none; }
+}
+
+@media (max-width: 900px) {
+  .booking-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .booking-search .search-btn { grid-column: 1 / -1; }
+  .booking-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .hero { min-height: 300px; padding: 16px 0 0; }
+  .hero .container { padding: 0 16px; }
+  section { padding: 36px 0; }
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+  .booking-search { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  .logo { font-size: 1.05rem; }
+  .header-actions { gap: 6px; }
+  .lang-select, .theme-toggle, .outline-btn, .signup-btn { padding: 6px 8px; font-size: 0.78rem; }
+  .btn-label { display: none; }
+}
+
+/* ---------- Իմ ամրագրումները ---------- */
+
+.my-bookings {
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.my-bookings[hidden] { display: none; }
+
+.my-bookings h3 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.my-bookings-note,
+.my-bookings-empty {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.my-bookings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.booking-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.booking-item.is-cancelled { opacity: 0.6; }
+
+.booking-main { flex: 1 1 220px; }
+
+.booking-main strong { display: block; }
+
+.booking-main span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.pending { background: #f1e3c4; color: #7a5a1e; }
+.status-badge.confirmed { background: #dce8dc; color: #3f6a45; }
+.status-badge.cancelled { background: var(--border); color: var(--muted); }
+
+[data-theme="dark"] .status-badge.pending { background: #4a3d22; color: #f0d79c; }
+[data-theme="dark"] .status-badge.confirmed { background: #2e4232; color: #b5d6b9; }
+
+.cancel-btn {
+  border: 1px solid var(--selected);
+  background: none;
+  color: var(--selected);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: var(--selected);
+  color: var(--on-selected);
+}
+
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cancel-closed {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* ---------- Ռեստորաններ ---------- */
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.section-head .search-btn[hidden] { display: none; }
+
+.restaurants-empty {
+  color: var(--muted);
+}
+
+.restaurant-noimg {
+  height: 170px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  font-size: 2.4rem;
+}
+
+.cuisine-badge {
+  display: inline-block;
+  margin: 0 20px 6px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: var(--accent-soft);
+  color: var(--selected);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.card .restaurant-address {
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 0;
+}
+
+.admin-actions .outline-btn {
+  padding: 5px 12px;
+  font-size: 0.85rem;
+}
+
+.field textarea {
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field.invalid textarea { border-color: var(--error); }
+
+.admin-actions { flex-wrap: wrap; }
+
+.admin-actions .search-btn {
+  padding: 5px 12px;
+  font-size: 0.85rem;
+}
+
+/* ---------- Ադմին պանել ---------- */
+
+.admin-tag {
+  margin-left: 6px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--selected);
+  color: var(--on-selected);
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.admin-box {
+  max-width: 420px;
+  margin: 64px auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+}
+
+#panelView { padding: 40px 0; }
+
+#adminName { max-width: none; }
+
+.admin-box h1,
+#panelView h1 {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+}
+
+.admin-box[hidden],
+#panelView[hidden] { display: none; }
+
+/* Գլխավոր էջի «Admin panel» կոճակը հղում է, ոչ թե կոճակ, դրա համար հանում ենք ընդգծումը */
+.admin-login-link[hidden] { display: none; }
+
+.admin-login-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.admin-section { margin-top: 32px; }
+
+.admin-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+.booking-guest {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.booking-item .search-btn {
+  padding: 5px 12px;
+  font-size: 0.85rem;
+}
+
+/* Ադմին պանել՝ ազատ և զբաղված սեղաններ */
+
+.admin-tables-search { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.admin-tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--free);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.admin-table-card.busy { border-left-color: var(--selected); }
+
+.admin-table-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-table-state {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--free);
+}
+
+.admin-table-card.busy .admin-table-state { color: var(--selected); }
+
+.admin-table-card .booking-guest {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .admin-tables-search { grid-template-columns: 1fr; }
+}
+
+/* Սեղանների զբաղվածությունը՝ Restaurants բաժնի ներսում */
+.admin-tables {
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.admin-tables h3 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.admin-tables .booking-search {
+  padding: 0;
+  border: none;
+}
+
+/* Ադմին էջի լոգոն հղում է դեպի գլխավոր էջ */
+.logo-link {
+  color: inherit;
+  text-decoration: none;
+}

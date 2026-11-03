@@ -44,10 +44,13 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- Every restaurant has its own tables, numbered from 1
   CREATE TABLE IF NOT EXISTS tables (
-    id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    number INTEGER NOT NULL UNIQUE,
-    seats  INTEGER NOT NULL
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL,
+    number        INTEGER NOT NULL,
+    seats         INTEGER NOT NULL,
+    UNIQUE (restaurant_id, number)
   );
 
   CREATE TABLE IF NOT EXISTS reservations (
@@ -57,9 +60,20 @@ db.exec(`
     date       TEXT NOT NULL,
     time       TEXT NOT NULL,
     guests     INTEGER NOT NULL,
+    duration   INTEGER NOT NULL DEFAULT 60,
     status     TEXT NOT NULL DEFAULT 'pending'
                CHECK (status IN ('pending', 'confirmed', 'cancelled')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS restaurants (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL,
+    cuisine     TEXT NOT NULL DEFAULT '',
+    address     TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    image_url   TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
   -- A table can have only one active reservation per time slot
@@ -67,11 +81,83 @@ db.exec(`
     ON reservations (table_id, date, time) WHERE status != 'cancelled';
 `);
 
-// Add the cafe's tables on first run
-if (db.prepare('SELECT COUNT(*) AS n FROM tables').get().n === 0) {
-  const insertTable = db.prepare('INSERT INTO tables (number, seats) VALUES (?, ?)');
-  [2, 2, 2, 4, 4, 4, 6, 8].forEach((seats, i) => insertTable.run(i + 1, seats));
+// Databases created before bookings had a length get the column added (existing bookings become 1 hour)
+const reservationColumns = db.prepare('PRAGMA table_info(reservations)').all().map((c) => c.name);
+if (!reservationColumns.includes('duration')) {
+  db.exec('ALTER TABLE reservations ADD COLUMN duration INTEGER NOT NULL DEFAULT 60');
 }
+
+// Users created before admins existed get the column added (nobody is admin until make-admin is run)
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+if (!userColumns.includes('is_admin')) {
+  db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0');
+}
+
+// Every user has a role: 'user' (guest) or 'admin' (staff).
+// Users who were already admins become 'admin'; everyone else becomes 'user'.
+if (!userColumns.includes('role')) {
+  db.exec(`
+    ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'
+      CHECK (role IN ('user', 'admin'));
+    UPDATE users SET role = 'admin' WHERE is_admin = 1;
+  `);
+}
+
+// Add 10 restaurants on first run; after that the admin manages the list
+if (db.prepare('SELECT COUNT(*) AS n FROM restaurants').get().n === 0) {
+  const photo = (id) => `https://images.unsplash.com/photo-${id}?w=700&q=70&auto=format&fit=crop`;
+  const insertRestaurant = db.prepare(
+    'INSERT INTO restaurants (name, cuisine, address, description, image_url) VALUES (?, ?, ?, ?, ?)'
+  );
+  [
+    ['Golden Plate', 'Fine dining', '2 Republic Square, Yerevan', 'An elegant hall with chandeliers for special evenings.', photo('1785845506893-70768a28ba44')],
+    ['Bordeaux Lounge', 'French', '5 Northern Avenue, Yerevan', 'Burgundy velvet interiors, French wines and a quiet atmosphere.', photo('1753727471014-efe38840c7c7')],
+    ['Ararat Terrace', 'Armenian', '12 Abovyan Street, Yerevan', 'Classic Armenian dishes and a terrace with a view of Mount Ararat.', photo('1667388969250-1c7220bf3f37')],
+    ['Lavash House', 'Armenian grill', '21 Tumanyan Street, Yerevan', 'Fresh lavash from the tonir and grilled khorovats.', photo('1682778418768-16081e4470a1')],
+    ['Trattoria Verde', 'Italian', '8 Pushkin Street, Yerevan', 'Handmade pasta and wood-fired pizza.', photo('1517248135467-4c7edcad34c4')],
+    ['Sakura Garden', 'Japanese', '3 Saryan Street, Yerevan', 'Sushi, ramen and a calm, garden-style hall.', photo('1667388968964-4aa652df0a9b')],
+    ['Café Cascade', 'Café', '1 Tamanyan Street, Yerevan', 'Coffee, desserts and breakfast near the Cascade.', photo('1771574205963-0c1d84ac7354')],
+    ['The Oak Grill', 'Steakhouse', '17 Mashtots Avenue, Yerevan', 'Steaks and grilled vegetables in a warm wooden hall.', photo('1552960226-639240203497')],
+    ['Spice Route', 'Indian', '24 Teryan Street, Yerevan', 'Curries, tandoor dishes and plenty of vegetarian choices.', photo('1687648431656-da99da578d50')],
+    ['Sevan Fish House', 'Seafood', '30 Arami Street, Yerevan', 'Fresh trout and fish from Lake Sevan.', photo('1560130934-590b85fc08e7')],
+  ].forEach((r) => insertRestaurant.run(...r));
+}
+
+// Older databases had one shared set of tables. Rebuild that table with a restaurant_id column
+// (keeping the table ids so existing bookings still point to the same tables) and give the
+// existing tables to the first restaurant.
+const tableColumns = db.prepare('PRAGMA table_info(tables)').all().map((c) => c.name);
+if (!tableColumns.includes('restaurant_id')) {
+  const firstRestaurant = db.prepare('SELECT MIN(id) AS id FROM restaurants').get().id;
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    BEGIN;
+    CREATE TABLE tables_new (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      restaurant_id INTEGER NOT NULL,
+      number        INTEGER NOT NULL,
+      seats         INTEGER NOT NULL,
+      UNIQUE (restaurant_id, number)
+    );
+    INSERT INTO tables_new (id, restaurant_id, number, seats) SELECT id, ${Number(firstRestaurant)}, number, seats FROM tables;
+    DROP TABLE tables;
+    ALTER TABLE tables_new RENAME TO tables;
+    COMMIT;
+  `);
+  db.exec('PRAGMA foreign_keys = ON');
+}
+
+// The hall layout every restaurant starts with: seats per table, tables numbered 1–8
+const DEFAULT_TABLE_SEATS = [2, 2, 2, 4, 4, 4, 6, 8];
+
+function addDefaultTables(restaurantId) {
+  const insertTable = db.prepare('INSERT INTO tables (restaurant_id, number, seats) VALUES (?, ?, ?)');
+  DEFAULT_TABLE_SEATS.forEach((seats, i) => insertTable.run(restaurantId, i + 1, seats));
+}
+
+// Restaurants without tables (new ones, or all of them on first run) get the default hall
+db.prepare('SELECT id FROM restaurants WHERE id NOT IN (SELECT restaurant_id FROM tables)').all()
+  .forEach((r) => addDefaultTables(r.id));
 
 // ---------- Helpers ----------
 
@@ -129,11 +215,11 @@ function getSessionUser(req) {
   const token = getSessionToken(req);
   if (!token) return null;
   const user = db.prepare(`
-    SELECT u.id, u.first_name AS firstName, u.last_name AS lastName, u.email
+    SELECT u.id, u.first_name AS firstName, u.last_name AS lastName, u.email, u.role
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token = ? AND s.created_at > datetime('now', ?)
   `).get(token, `-${SESSION_DAYS} days`);
-  return user ? { ...user } : null;
+  return user ? { ...user, isAdmin: user.role === 'admin' } : null;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -142,11 +228,130 @@ const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const asText = (value) => (typeof value === 'string' ? value.trim() : '');
 
+// A reservation can be cancelled until 1 hour before it starts
+const CANCEL_BEFORE_MS = 60 * 60 * 1000;
+
+function canStillCancel(reservation) {
+  return new Date(`${reservation.date}T${reservation.time}`) - new Date() >= CANCEL_BEFORE_MS;
+}
+
+// Every new booking holds the table for 1 hour; the stored duration lets the admin extend it later
+const BOOKING_MINUTES = 60;
+const CLOSING_MINUTES = 23 * 60;
+
+// True once the booking's time slot is over (start + duration is in the past)
+function hasEnded(reservation) {
+  const start = new Date(`${reservation.date}T${reservation.time}`);
+  return start.getTime() + reservation.duration * 60 * 1000 <= Date.now();
+}
+
+function toMinutes(time) {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// True if the table already has an active booking that overlaps [start, start + duration)
+function isTableBusy(tableId, date, start, duration, ignoreId = 0) {
+  return db.prepare(`
+    SELECT time, duration FROM reservations
+    WHERE table_id = ? AND date = ? AND status != 'cancelled' AND id != ?
+  `).all(tableId, date, ignoreId).some((r) => {
+    const otherStart = toMinutes(r.time);
+    return start < otherStart + r.duration && otherStart < start + duration;
+  });
+}
+
+// Sends 403 and returns false unless the signed-in user has the 'admin' role
+function requireAdmin(req, res, message = 'Մուտքն արգելված է') {
+  const user = getSessionUser(req);
+  if (user && user.role === 'admin') return true;
+  sendJson(res, 403, { error: message });
+  return false;
+}
+
+const RESTAURANTS_ADMIN_ONLY = 'Միայն ադմինը կարող է փոխել ռեստորանները';
+
+const RESTAURANT_LIMITS = { name: 80, cuisine: 40, address: 120, description: 300, imageUrl: 500 };
+
+// Validates the restaurant fields; sends 400 and returns null when something is wrong
+function readRestaurant(body, res) {
+  const data = {};
+  for (const field of Object.keys(RESTAURANT_LIMITS)) data[field] = asText(body[field]);
+
+  if (!data.name) {
+    sendJson(res, 400, { errors: { name: 'Գրեք ռեստորանի անվանումը' } });
+    return null;
+  }
+  const tooLong = Object.keys(RESTAURANT_LIMITS).find((field) => data[field].length > RESTAURANT_LIMITS[field]);
+  if (tooLong) {
+    sendJson(res, 400, { errors: { [tooLong]: 'Տեքստը չափազանց երկար է' } });
+    return null;
+  }
+  if (data.imageUrl && !/^https:\/\/\S+$/.test(data.imageUrl)) {
+    sendJson(res, 400, { errors: { imageUrl: 'Լուսանկարի հղումը պետք է սկսվի https://-ով' } });
+    return null;
+  }
+  return data;
+}
+
 // ---------- API ----------
 
 const routes = {
   'GET /api/me': (req, res) => {
     sendJson(res, 200, { user: getSessionUser(req) });
+  },
+
+  // ---------- Restaurants: everyone can see the list, only the admin can change it ----------
+
+  'GET /api/restaurants': (req, res) => {
+    const restaurants = db.prepare(`
+      SELECT id, name, cuisine, address, description, image_url AS imageUrl
+      FROM restaurants ORDER BY id
+    `).all();
+    sendJson(res, 200, { restaurants: restaurants.map((r) => ({ ...r })) });
+  },
+
+  'POST /api/restaurants': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const data = readRestaurant(await readJson(req), res);
+    if (!data) return;
+
+    const { lastInsertRowid } = db
+      .prepare('INSERT INTO restaurants (name, cuisine, address, description, image_url) VALUES (?, ?, ?, ?, ?)')
+      .run(data.name, data.cuisine, data.address, data.description, data.imageUrl);
+    addDefaultTables(lastInsertRowid);
+    sendJson(res, 201, { restaurant: { id: Number(lastInsertRowid), ...data } });
+  },
+
+  'POST /api/restaurants/update': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const body = await readJson(req);
+    const id = Number(body.id);
+    if (!Number.isInteger(id) || !db.prepare('SELECT 1 FROM restaurants WHERE id = ?').get(id)) {
+      return sendJson(res, 404, { error: 'Այդպիսի ռեստորան չկա' });
+    }
+    const data = readRestaurant(body, res);
+    if (!data) return;
+
+    db.prepare('UPDATE restaurants SET name = ?, cuisine = ?, address = ?, description = ?, image_url = ? WHERE id = ?')
+      .run(data.name, data.cuisine, data.address, data.description, data.imageUrl, id);
+    sendJson(res, 200, { restaurant: { id, ...data } });
+  },
+
+  'POST /api/restaurants/delete': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const id = Number((await readJson(req)).id);
+    const { changes } = Number.isInteger(id)
+      ? db.prepare('DELETE FROM restaurants WHERE id = ?').run(id)
+      : { changes: 0 };
+    if (!changes) return sendJson(res, 404, { error: 'Այդպիսի ռեստորան չկա' });
+
+    // Guests' bookings at a removed restaurant are cancelled; the rows stay so they still see them
+    db.prepare(`
+      UPDATE reservations SET status = 'cancelled'
+      WHERE status != 'cancelled' AND table_id IN (SELECT id FROM tables WHERE restaurant_id = ?)
+    `).run(id);
+    sendJson(res, 200, { ok: true });
   },
 
   'POST /api/signup': async (req, res) => {
@@ -186,7 +391,28 @@ const routes = {
 
     sendJson(
       res, 200,
-      { user: { firstName: user.first_name, lastName: user.last_name, email: user.email } },
+      { user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: user.role === 'admin' } },
+      { 'Set-Cookie': startSession(user.id) }
+    );
+  },
+
+  // Login form of the admin page: guests are refused and are NOT logged in
+  'POST /api/admin/login': async (req, res) => {
+    const body = await readJson(req);
+    const email = asText(body.email).toLowerCase();
+    const password = typeof body.password === 'string' ? body.password : '';
+
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    if (!user || !verifyPassword(password, user.password_hash)) {
+      return sendJson(res, 401, { error: 'Email-ը կամ գաղտնաբառը սխալ է' });
+    }
+    if (user.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Մուտքն արգելված է' });
+    }
+
+    sendJson(
+      res, 200,
+      { user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: true } },
       { 'Set-Cookie': startSession(user.id) }
     );
   },
@@ -197,24 +423,25 @@ const routes = {
     sendJson(res, 200, { ok: true }, { 'Set-Cookie': 'session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
   },
 
-  // Tables with their availability for a given date and time
+  // A restaurant's tables with their availability for a given date and time
   'GET /api/tables': (req, res, url) => {
+    const restaurantId = Number(url.searchParams.get('restaurantId'));
     const date = url.searchParams.get('date') || '';
     const time = url.searchParams.get('time') || '';
+    if (!Number.isInteger(restaurantId) || !db.prepare('SELECT 1 FROM restaurants WHERE id = ?').get(restaurantId)) {
+      return sendJson(res, 404, { error: 'Այդպիսի ռեստորան չկա' });
+    }
     if (!DATE_RE.test(date) || !TIME_RE.test(time)) {
       return sendJson(res, 400, { error: 'Նշեք ճիշտ օր և ժամ' });
     }
 
-    const tables = db.prepare(`
-      SELECT t.id, t.number, t.seats,
-        NOT EXISTS (
-          SELECT 1 FROM reservations r
-          WHERE r.table_id = t.id AND r.date = ? AND r.time = ? AND r.status != 'cancelled'
-        ) AS free
-      FROM tables t ORDER BY t.number
-    `).all(date, time);
+    const start = toMinutes(time);
+    const tables = db.prepare('SELECT id, number, seats FROM tables WHERE restaurant_id = ? ORDER BY number').all(restaurantId);
 
-    sendJson(res, 200, { tables: tables.map((t) => ({ ...t, free: t.free === 1 })) });
+    sendJson(res, 200, {
+      duration: BOOKING_MINUTES,
+      tables: tables.map((t) => ({ ...t, free: !isTableBusy(t.id, date, start, BOOKING_MINUTES) })),
+    });
   },
 
   // The signed-in user's own reservations
@@ -223,12 +450,114 @@ const routes = {
     if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
 
     const reservations = db.prepare(`
-      SELECT r.id, r.date, r.time, r.guests, r.status, t.number AS tableNumber
-      FROM reservations r JOIN tables t ON t.id = r.table_id
+      SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, t.number AS tableNumber,
+        COALESCE(rest.name, '') AS restaurantName
+      FROM reservations r
+      JOIN tables t ON t.id = r.table_id
+      LEFT JOIN restaurants rest ON rest.id = t.restaurant_id
       WHERE r.user_id = ? ORDER BY r.date, r.time
     `).all(user.id);
 
-    sendJson(res, 200, { reservations: reservations.map((r) => ({ ...r })) });
+    // Bookings whose hour is over (the guests have been served) are no longer shown; they stay in the database
+    sendJson(res, 200, {
+      reservations: reservations
+        .filter((r) => !hasEnded(r))
+        .map((r) => ({ ...r, canCancel: r.status !== 'cancelled' && canStillCancel(r) })),
+    });
+  },
+
+  // ---------- Admin: every guest's upcoming bookings, and confirming them ----------
+
+  'GET /api/admin/reservations': (req, res) => {
+    if (!requireAdmin(req, res)) return;
+
+    const reservations = db.prepare(`
+      SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, t.number AS tableNumber,
+        COALESCE(rest.name, '') AS restaurantName,
+        u.first_name || ' ' || u.last_name AS guestName, u.email AS guestEmail
+      FROM reservations r
+      JOIN tables t ON t.id = r.table_id
+      JOIN users u ON u.id = r.user_id
+      LEFT JOIN restaurants rest ON rest.id = t.restaurant_id
+      ORDER BY r.date, r.time
+    `).all();
+
+    // Same rule as the guests' list: bookings whose hour is over are not shown
+    sendJson(res, 200, { reservations: reservations.filter((r) => !hasEnded(r)).map((r) => ({ ...r })) });
+  },
+
+  // A restaurant's tables on a given date, each with its bookings that day.
+  // Without a time the whole day is shown; with a time only the booking holding the table then.
+  'GET /api/admin/tables': (req, res, url) => {
+    if (!requireAdmin(req, res)) return;
+    const restaurantId = Number(url.searchParams.get('restaurantId'));
+    const date = url.searchParams.get('date') || '';
+    const time = url.searchParams.get('time') || '';
+    if (!Number.isInteger(restaurantId) || !db.prepare('SELECT 1 FROM restaurants WHERE id = ?').get(restaurantId)) {
+      return sendJson(res, 404, { error: 'Այդպիսի ռեստորան չկա' });
+    }
+    if (!DATE_RE.test(date) || (time && !TIME_RE.test(time))) {
+      return sendJson(res, 400, { error: 'Նշեք ճիշտ օր և ժամ' });
+    }
+
+    const tables = db.prepare('SELECT id, number, seats FROM tables WHERE restaurant_id = ? ORDER BY number').all(restaurantId);
+    const bookingsOf = db.prepare(`
+      SELECT r.time, r.duration, r.guests, r.status, u.first_name || ' ' || u.last_name AS guestName
+      FROM reservations r JOIN users u ON u.id = r.user_id
+      WHERE r.table_id = ? AND r.date = ? AND r.status != 'cancelled'
+      ORDER BY r.time
+    `);
+
+    sendJson(res, 200, {
+      tables: tables.map((t) => {
+        let bookings = bookingsOf.all(t.id, date);
+        if (time) {
+          // Only the booking that overlaps the hour starting at the chosen time
+          const start = toMinutes(time);
+          bookings = bookings.filter((r) => {
+            const otherStart = toMinutes(r.time);
+            return start < otherStart + r.duration && otherStart < start + BOOKING_MINUTES;
+          });
+        }
+        return { ...t, free: bookings.length === 0, bookings: bookings.map((r) => ({ ...r })) };
+      }),
+    });
+  },
+
+  'POST /api/admin/reservations/confirm': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = Number((await readJson(req)).id);
+    const reservation = Number.isInteger(id) && db.prepare('SELECT status FROM reservations WHERE id = ?').get(id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.status === 'cancelled') {
+      return sendJson(res, 400, { error: 'Չեղարկված ամրագրումը հնարավոր չէ հաստատել' });
+    }
+
+    db.prepare("UPDATE reservations SET status = 'confirmed' WHERE id = ?").run(id);
+    sendJson(res, 200, { reservation: { id, status: 'confirmed' } });
+  },
+
+  // Cancel one of the signed-in user's own reservations
+  'POST /api/reservations/cancel': async (req, res) => {
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const reservation = Number.isInteger(id) &&
+      db.prepare('SELECT * FROM reservations WHERE id = ? AND user_id = ?').get(id, user.id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.status === 'cancelled') {
+      return sendJson(res, 400, { error: 'Ամրագրումն արդեն չեղարկված է' });
+    }
+    if (!canStillCancel(reservation)) {
+      return sendJson(res, 400, { error: 'Ամրագրումը կարելի է չեղարկել առնվազն 1 ժամ առաջ' });
+    }
+
+    db.prepare("UPDATE reservations SET status = 'cancelled' WHERE id = ?").run(id);
+    sendJson(res, 200, { reservation: { id, status: 'cancelled' } });
   },
 
   'POST /api/reservations': async (req, res) => {
@@ -247,22 +576,38 @@ const routes = {
     if (new Date(`${date}T${time}`) < new Date()) {
       return sendJson(res, 400, { error: 'Անցած ժամի համար ամրագրել հնարավոր չէ' });
     }
+    if (toMinutes(time) + BOOKING_MINUTES > CLOSING_MINUTES) {
+      return sendJson(res, 400, { error: 'Ամրագրումը պետք է ավարտվի մինչև 23:00' });
+    }
     if (!Number.isInteger(guests) || guests < 1) {
       return sendJson(res, 400, { error: 'Նշեք հյուրերի քանակը' });
     }
 
-    const table = Number.isInteger(tableId) && db.prepare('SELECT * FROM tables WHERE id = ?').get(tableId);
+    // The table must belong to a restaurant that still exists
+    const table = Number.isInteger(tableId) && db.prepare(`
+      SELECT t.*, rest.name AS restaurantName
+      FROM tables t JOIN restaurants rest ON rest.id = t.restaurant_id
+      WHERE t.id = ?
+    `).get(tableId);
     if (!table) return sendJson(res, 400, { error: 'Այդպիսի սեղան չկա' });
     if (guests > table.seats) {
       return sendJson(res, 400, { error: `Այս սեղանին տեղավորվում է առավելագույնը ${table.seats} հոգի` });
     }
 
+    // The table must be free for the whole hour, not just at the start time
+    if (isTableBusy(table.id, date, toMinutes(time), BOOKING_MINUTES)) {
+      return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
+    }
+
     try {
       const { lastInsertRowid } = db
-        .prepare('INSERT INTO reservations (user_id, table_id, date, time, guests) VALUES (?, ?, ?, ?, ?)')
-        .run(user.id, table.id, date, time, guests);
+        .prepare('INSERT INTO reservations (user_id, table_id, date, time, guests, duration) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(user.id, table.id, date, time, guests, BOOKING_MINUTES);
       sendJson(res, 201, {
-        reservation: { id: Number(lastInsertRowid), date, time, guests, status: 'pending', tableNumber: table.number },
+        reservation: {
+          id: Number(lastInsertRowid), date, time, duration: BOOKING_MINUTES, guests, status: 'pending',
+          tableNumber: table.number, restaurantName: table.restaurantName,
+        },
       });
     } catch (err) {
       if (/UNIQUE/.test(err.message)) {

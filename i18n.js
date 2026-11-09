@@ -94,7 +94,7 @@ const TRANSLATIONS = {
     noAccount: "Դեռ հաշիվ չունե՞ք։",
     signupLink: "Գրանցվել",
 
-    footerText: "TableBook · Սեղանների ամրագրում փոքր սրճարանների համար",
+    footerText: "TableBook · Սեղանների ամրագրման համակարգ",
 
     errFirstName: "Գրեք ձեր անունը",
     errLastName: "Գրեք ձեր ազգանունը",
@@ -318,7 +318,7 @@ const TRANSLATIONS = {
     noAccount: "Ещё нет аккаунта?",
     signupLink: "Зарегистрироваться",
 
-    footerText: "TableBook · Бронирование столиков для небольших кафе",
+    footerText: "TableBook · Система бронирования столиков",
 
     errFirstName: "Введите имя",
     errLastName: "Введите фамилию",
@@ -543,7 +543,7 @@ const TRANSLATIONS = {
     noAccount: "Don't have an account yet?",
     signupLink: "Sign up",
 
-    footerText: "TableBook · Table booking for small cafés",
+    footerText: "TableBook · Table booking system",
 
     errFirstName: "Enter your first name",
     errLastName: "Enter your last name",

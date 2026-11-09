@@ -812,19 +812,158 @@ footer {
 
 /* ---------- Իմ ամրագրումները ---------- */
 
-.my-bookings {
-  margin-top: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
+/* Վահանակը էջի սկզբում՝ միայն մուտք գործած հյուրի համար */
+.my-panel {
+  padding: 14px 0;
+  border-top: none;
+  border-bottom: 1px solid var(--border);
 }
 
-.my-bookings[hidden] { display: none; }
+.my-panel[hidden],
+.my-body[hidden] { display: none; }
 
-.my-bookings h3 {
-  margin: 0 0 4px;
-  font-size: 1.2rem;
+/* Մեկ նեղ տող՝ կոճակ, ամփոփում և «Նոր ամրագրում» */
+.my-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+
+.my-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-toggle:hover { border-color: var(--accent); }
+
+.my-chevron { transition: transform 0.2s; }
+
+.my-toggle[aria-expanded="true"] .my-chevron { transform: rotate(180deg); }
+
+.new-booking-link {
+  display: inline-block;
+  margin-left: auto;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+/* Կոճակից կախված պատուհան՝ էջի բովանդակության վրա */
+.my-bar { position: relative; }
+
+.my-body {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+}
+
+.my-body .my-booking-card { background: var(--bg); }
+
+.my-body .my-booking-message { background: var(--surface); }
+
+/* Հեռախոսում՝ կոճակները մեկ տողում, ամփոփումը՝ դրանց տակ */
+@media (max-width: 600px) {
+  .my-toggle,
+  .new-booking-link { padding: 6px 12px; font-size: 0.9rem; }
+  .my-summary { gap: 4px; flex-wrap: nowrap; }
+  .my-summary-chip { padding: 1px 8px; font-size: 0.75rem; white-space: nowrap; }
+  .my-chip-label { display: none; }
+}
+
+.my-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.my-summary:empty { display: none; }
+
+.my-summary-chip {
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.my-bookings-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.my-booking-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.my-booking-card.pending { border-left-color: #c9a35a; }
+.my-booking-card.confirmed { border-left-color: #6c9a72; }
+.my-booking-card.rejected { border-left-color: var(--selected); }
+.my-booking-card.cancelled { border-left-color: var(--busy); opacity: 0.75; }
+
+.my-booking-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.my-booking-details {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.my-booking-message {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.my-booking-icon { flex-shrink: 0; }
+
+.my-booking-message q {
+  display: block;
+  margin-top: 4px;
+  font-style: italic;
+  color: var(--selected);
 }
 
 .my-bookings-note,
@@ -833,6 +972,8 @@ footer {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.my-panel .my-bookings-note { margin: 16px 0 0; }
 
 .my-bookings-list {
   list-style: none;
@@ -874,6 +1015,9 @@ footer {
 .status-badge.pending { background: #f1e3c4; color: #7a5a1e; }
 .status-badge.confirmed { background: #dce8dc; color: #3f6a45; }
 .status-badge.cancelled { background: var(--border); color: var(--muted); }
+.status-badge.rejected { background: #f2dcdf; color: var(--selected); }
+
+[data-theme="dark"] .status-badge.rejected { background: #4a2a30; color: #e6aab3; }
 
 [data-theme="dark"] .status-badge.pending { background: #4a3d22; color: #f0d79c; }
 [data-theme="dark"] .status-badge.confirmed { background: #2e4232; color: #b5d6b9; }
@@ -1042,6 +1186,53 @@ footer {
 .booking-item .search-btn {
   padding: 5px 12px;
   font-size: 0.85rem;
+}
+
+/* Մերժված ամրագրում՝ ադմինի հաղորդագրությամբ */
+.booking-main .reject-reason {
+  display: block;
+  margin-top: 4px;
+  color: var(--selected);
+  font-size: 0.85rem;
+}
+
+/* Մերժման պատուհան */
+.reject-booking {
+  margin: -8px 0 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.reject-label {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.reject-templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.reject-template {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.reject-template:hover { border-color: var(--accent); }
+
+.reject-template.selected {
+  border-color: var(--selected);
+  background: var(--selected);
+  color: var(--on-selected);
 }
 
 /* Ադմին պանել՝ ազատ և զբաղված սեղաններ */

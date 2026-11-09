@@ -551,39 +551,122 @@ bookBtn.addEventListener("click", async () => {
 const myBookings = document.getElementById("myBookings");
 const myBookingsList = document.getElementById("myBookingsList");
 const myBookingsEmpty = document.getElementById("myBookingsEmpty");
+const myBookingsSummary = document.getElementById("myBookingsSummary");
+const myBookingsToggle = document.getElementById("myBookingsToggle");
+const myBookingsBody = document.getElementById("myBookingsBody");
 let lastBookings = [];
 
-const STATUS_KEYS = { pending: "statusPending", confirmed: "statusConfirmed", cancelled: "statusCancelled" };
+// «Իմ ամրագրումները» կոճակը բացում և փակում է քարտերի պատուհանը
+function setMyBookingsOpen(open) {
+  myBookingsBody.hidden = !open;
+  myBookingsToggle.setAttribute("aria-expanded", String(open));
+}
+
+myBookingsToggle.addEventListener("click", () => setMyBookingsOpen(myBookingsBody.hidden));
+
+// Փակել՝ պատուհանից դուրս սեղմելով կամ Esc-ով
+document.addEventListener("click", (event) => {
+  if (!myBookingsBody.hidden && !myBookingsBody.contains(event.target) && !myBookingsToggle.contains(event.target)) {
+    setMyBookingsOpen(false);
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !myBookingsBody.hidden) {
+    setMyBookingsOpen(false);
+    myBookingsToggle.focus();
+  }
+});
+
+// Ամրագրման վիճակը հյուրի համար. մերժվածը պահվում է որպես «cancelled»՝ ադմինի հաղորդագրությամբ
+const STATE_TEXT = {
+  pending: { badge: "statusPending", icon: "⏳", message: "msgPending" },
+  confirmed: { badge: "statusConfirmed", icon: "✅", message: "msgConfirmed" },
+  rejected: { badge: "statusRejected", icon: "✖", message: "msgRejected" },
+  cancelled: { badge: "statusCancelled", icon: "↩", message: "msgCancelled" },
+};
+
+function bookingState(booking) {
+  return booking.rejectReason ? "rejected" : (STATE_TEXT[booking.status] ? booking.status : "pending");
+}
 
 async function loadMyBookings() {
   try {
     const response = await fetch("/api/reservations");
     if (!response.ok) return;
+    const previous = new Map(lastBookings.map((b) => [b.id, bookingState(b)]));
     lastBookings = (await response.json()).reservations;
+    // Ռեստորանը պատասխանել է սպասող ամրագրմանը, մինչ էջը բաց էր
+    const answered = lastBookings.some((b) => previous.get(b.id) === "pending" && ["confirmed", "rejected"].includes(bookingState(b)));
+    if (answered) {
+      showToast(t("msgAnswered"));
+      setMyBookingsOpen(true);
+    }
     renderMyBookings();
   } catch (e) {}
 }
+
+// Ադմինի պատասխանը երևում է առանց էջը թարմացնելու
+setInterval(() => {
+  if (!myBookings.hidden && !document.hidden) loadMyBookings();
+}, 30000);
 
 function renderMyBookings() {
   myBookingsList.innerHTML = "";
   myBookingsEmpty.hidden = lastBookings.length > 0;
 
+  // Վերևի ամփոփումը՝ քանի ամրագրում կա ամեն վիճակում
+  myBookingsSummary.innerHTML = "";
+  ["pending", "confirmed", "rejected"].forEach((state) => {
+    const count = lastBookings.filter((b) => bookingState(b) === state).length;
+    if (!count) return;
+    const chip = document.createElement("span");
+    chip.className = "my-summary-chip " + state;
+    chip.title = t(STATE_TEXT[state].badge);
+    // Հեռախոսում անվանումը թաքցվում է, մնում են նշանն ու թիվը
+    const label = document.createElement("span");
+    label.className = "my-chip-label";
+    label.textContent = t(STATE_TEXT[state].badge) + ":";
+    chip.append(STATE_TEXT[state].icon + " ", label, " " + count);
+    myBookingsSummary.appendChild(chip);
+  });
+
   lastBookings.forEach((booking) => {
+    const state = bookingState(booking);
     const item = document.createElement("li");
-    item.className = "booking-item" + (booking.status === "cancelled" ? " is-cancelled" : "");
+    item.className = "my-booking-card " + state;
 
-    const main = document.createElement("div");
-    main.className = "booking-main";
+    const top = document.createElement("div");
+    top.className = "my-booking-top";
     const title = document.createElement("strong");
-    title.textContent = (booking.restaurantName ? booking.restaurantName + " · " : "") + t("tableN", { n: booking.tableNumber });
-    const details = document.createElement("span");
-    details.textContent = formatDate(booking.date) + ", " + timeRange(booking.time, booking.duration) + " · " + t("guestsOption", { n: booking.guests });
-    main.append(title, details);
-
+    title.textContent = booking.restaurantName || t("tableN", { n: booking.tableNumber });
     const badge = document.createElement("span");
-    badge.className = "status-badge " + booking.status;
-    badge.textContent = t(STATUS_KEYS[booking.status] || "statusPending");
-    item.append(main, badge);
+    badge.className = "status-badge " + state;
+    badge.textContent = t(STATE_TEXT[state].badge);
+    top.append(title, badge);
+
+    const details = document.createElement("p");
+    details.className = "my-booking-details";
+    details.textContent = t("tableN", { n: booking.tableNumber }) + " · " + formatDate(booking.date) + ", " +
+      timeRange(booking.time, booking.duration) + " · " + t("guestsOption", { n: booking.guests });
+
+    // Ռեստորանի պատասխանը. մերժման դեպքում՝ ադմինի գրած հաղորդագրությունը
+    const message = document.createElement("div");
+    message.className = "my-booking-message";
+    const icon = document.createElement("span");
+    icon.className = "my-booking-icon";
+    icon.textContent = STATE_TEXT[state].icon;
+    const text = document.createElement("div");
+    const label = document.createElement("span");
+    label.textContent = t(STATE_TEXT[state].message);
+    text.appendChild(label);
+    if (booking.rejectReason) {
+      const reason = document.createElement("q");
+      reason.textContent = booking.rejectReason;
+      text.appendChild(reason);
+    }
+    message.append(icon, text);
+
+    item.append(top, details, message);
 
     const isPast = new Date(booking.date + "T" + booking.time) < new Date();
     if (booking.canCancel) {

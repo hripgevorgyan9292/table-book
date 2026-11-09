@@ -167,9 +167,16 @@ function renderAdminBookings() {
     guest.textContent = "👤 " + booking.guestName + " · " + booking.guestEmail;
     main.append(title, details, guest);
 
+    if (booking.rejectReason) {
+      const reason = document.createElement("span");
+      reason.className = "reject-reason";
+      reason.textContent = t("rejectReasonShown", { reason: booking.rejectReason });
+      main.appendChild(reason);
+    }
+
     const badge = document.createElement("span");
     badge.className = "status-badge " + booking.status;
-    badge.textContent = t(STATUS_KEYS[booking.status] || "statusPending");
+    badge.textContent = t(booking.rejectReason ? "statusRejected" : STATUS_KEYS[booking.status] || "statusPending");
     item.append(main, badge);
 
     if (booking.status === "pending") {
@@ -178,7 +185,13 @@ function renderAdminBookings() {
       confirmBtn.className = "search-btn";
       confirmBtn.textContent = t("confirmBtn");
       confirmBtn.addEventListener("click", () => confirmBooking(booking, confirmBtn));
-      item.appendChild(confirmBtn);
+
+      const rejectBtn = document.createElement("button");
+      rejectBtn.type = "button";
+      rejectBtn.className = "cancel-btn";
+      rejectBtn.textContent = t("rejectBtn");
+      rejectBtn.addEventListener("click", () => openRejectForm(booking));
+      item.append(confirmBtn, rejectBtn);
     }
 
     adminBookingsList.appendChild(item);
@@ -197,6 +210,81 @@ async function confirmBooking(booking, btn) {
     btn.disabled = false;
   }
 }
+
+// ---------- Ամրագրման մերժում ----------
+
+const rejectModal = document.getElementById("rejectModal");
+const rejectForm = document.getElementById("rejectForm");
+const rejectTemplates = document.getElementById("rejectTemplates");
+const rejectBookingInfo = document.getElementById("rejectBookingInfo");
+// Պատրաստի պատասխաններ. ընտրվածը լցվում է դաշտում, որտեղ ադմինը կարող է այն փոխել
+const REJECT_TEMPLATES = ["rejectTplBusy", "rejectTplClosed", "rejectTplGuests", "rejectTplTime"];
+let rejectingBooking = null;
+
+function renderRejectTemplates() {
+  rejectTemplates.innerHTML = "";
+  REJECT_TEMPLATES.forEach((key) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "reject-template";
+    btn.textContent = t(key + "Title");
+    btn.addEventListener("click", () => {
+      rejectForm.reason.value = t(key);
+      showError("rejectReason", "");
+      rejectTemplates.querySelectorAll(".reject-template").forEach((b) => b.classList.toggle("selected", b === btn));
+    });
+    rejectTemplates.appendChild(btn);
+  });
+}
+
+function openRejectForm(booking) {
+  rejectingBooking = booking;
+  rejectBookingInfo.textContent = "👤 " + booking.guestName + " · " +
+    (booking.restaurantName ? booking.restaurantName + " · " : "") + t("tableN", { n: booking.tableNumber }) +
+    " · " + formatDate(booking.date) + ", " + timeRange(booking.time, booking.duration);
+  rejectForm.reset();
+  showError("rejectReason", "");
+  renderRejectTemplates();
+  rejectModal.hidden = false;
+  rejectForm.reason.focus();
+}
+
+function closeRejectForm() {
+  rejectModal.hidden = true;
+}
+
+rejectModal.querySelector(".modal-close").addEventListener("click", closeRejectForm);
+rejectModal.addEventListener("click", (event) => {
+  if (event.target === rejectModal) closeRejectForm();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !rejectModal.hidden) closeRejectForm();
+});
+rejectForm.reason.addEventListener("input", () => showError("rejectReason", ""));
+
+rejectForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const reason = rejectForm.reason.value.trim();
+  if (!reason) return showError("rejectReason", t("errRejectReason"));
+
+  const submitBtn = rejectForm.querySelector(".submit-btn");
+  submitBtn.disabled = true;
+  try {
+    const { ok, result } = await postJson("/api/admin/reservations/reject", { id: rejectingBooking.id, reason });
+    if (ok) {
+      closeRejectForm();
+      showToast(t("bookingRejected"));
+      loadAdminBookings();
+      loadAdminTables();
+    } else {
+      showError("rejectReason", translateServer(result.error));
+    }
+  } catch (e) {
+    showToast(t("networkError"));
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
 
 // ---------- Ազատ և զբաղված սեղաններ ----------
 
@@ -470,6 +558,7 @@ function applyLanguage() {
   renderAdminBookings();
   renderAdminTables();
   renderRestaurants();
+  renderRejectTemplates();
   restaurantFormTitle.textContent = t(editingRestaurant ? "restaurantFormEdit" : "restaurantFormAdd");
 }
 

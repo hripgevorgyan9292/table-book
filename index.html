@@ -33,6 +33,26 @@
   </header>
 
   <main>
+    <!-- Մուտք գործած հյուրի ամրագրումները և ռեստորանի պատասխանները՝ էջի սկզբում -->
+    <section class="my-panel" id="myBookings" hidden>
+      <div class="container">
+        <!-- Քարտերը բացվում են կոճակից կախված պատուհանում՝ էջի մնացած մասը տեղից չշարժելով -->
+        <div class="my-bar">
+          <button class="my-toggle" id="myBookingsToggle" type="button" aria-expanded="false" aria-controls="myBookingsBody">
+            <span data-i18n="myBookingsTitle">My bookings</span>
+            <span class="my-summary" id="myBookingsSummary"></span>
+            <span class="my-chevron" aria-hidden="true">▾</span>
+          </button>
+          <a class="search-btn new-booking-link" href="#booking" data-i18n="newBookingBtn">+ New booking</a>
+          <div class="my-body" id="myBookingsBody" hidden>
+            <p class="my-bookings-empty" id="myBookingsEmpty" data-i18n="myBookingsEmpty" hidden>You have no bookings yet.</p>
+            <ul class="my-bookings-grid" id="myBookingsList"></ul>
+            <p class="my-bookings-note" data-i18n="cancelRule">You can cancel a booking up to 1 hour before it starts.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="hero">
       <div class="container">
         <h1 data-i18n="heroTitle">TableBook</h1>
@@ -162,13 +182,6 @@
             <button class="search-btn" id="bookBtn" type="button" data-i18n="bookNow">Book</button>
           </div>
         </aside>
-      </div>
-
-      <div class="my-bookings" id="myBookings" hidden>
-        <h3 data-i18n="myBookingsTitle">My bookings</h3>
-        <p class="my-bookings-note" data-i18n="cancelRule">You can cancel a booking up to 1 hour before it starts.</p>
-        <p class="my-bookings-empty" id="myBookingsEmpty" data-i18n="myBookingsEmpty" hidden>You have no bookings yet.</p>
-        <ul class="my-bookings-list" id="myBookingsList"></ul>
       </div>
       </div>
     </section>

@@ -87,6 +87,10 @@ const reservationColumns = db.prepare('PRAGMA table_info(reservations)').all().m
 if (!reservationColumns.includes('duration')) {
   db.exec('ALTER TABLE reservations ADD COLUMN duration INTEGER NOT NULL DEFAULT 60');
 }
+// The admin's message to the guest when a booking is rejected (rejected bookings are 'cancelled')
+if (!reservationColumns.includes('reject_reason')) {
+  db.exec('ALTER TABLE reservations ADD COLUMN reject_reason TEXT');
+}
 
 // Users created before admins existed get the column added (nobody is admin until make-admin is run)
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
@@ -250,6 +254,7 @@ function canStillCancel(reservation) {
 
 // Every new booking holds the table for 1 hour; the stored duration lets the admin extend it later
 const BOOKING_MINUTES = 60;
+const REJECT_REASON_MAX = 300;
 const CLOSING_MINUTES = 23 * 60;
 
 // True once the booking's time slot is over (start + duration is in the past)
@@ -472,7 +477,7 @@ const routes = {
     if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
 
     const reservations = db.prepare(`
-      SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, t.number AS tableNumber,
+      SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
         COALESCE(rest.name, '') AS restaurantName
       FROM reservations r
       JOIN tables t ON t.id = r.table_id
@@ -494,7 +499,7 @@ const routes = {
     if (!requireAdmin(req, res)) return;
 
     const reservations = db.prepare(`
-      SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, t.number AS tableNumber,
+      SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
         COALESCE(rest.name, '') AS restaurantName,
         u.first_name || ' ' || u.last_name AS guestName, u.email AS guestEmail
       FROM reservations r
@@ -564,6 +569,25 @@ const routes = {
 
     db.prepare("UPDATE reservations SET status = 'confirmed' WHERE id = ?").run(id);
     sendJson(res, 200, { reservation: { id, status: 'confirmed' } });
+  },
+
+  // Reject a booking with a message the guest sees in "My bookings"
+  'POST /api/admin/reservations/reject': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const reason = asText(body.reason);
+    const reservation = Number.isInteger(id) && db.prepare('SELECT status FROM reservations WHERE id = ?').get(id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.status === 'cancelled') {
+      return sendJson(res, 400, { error: 'Ամրագրումն արդեն չեղարկված է' });
+    }
+    if (!reason) return sendJson(res, 400, { error: 'Գրեք մերժման պատճառը' });
+    if (reason.length > REJECT_REASON_MAX) return sendJson(res, 400, { error: 'Տեքստը չափազանց երկար է' });
+
+    db.prepare("UPDATE reservations SET status = 'cancelled', reject_reason = ? WHERE id = ?").run(reason, id);
+    sendJson(res, 200, { reservation: { id, status: 'cancelled', rejectReason: reason } });
   },
 
   // Cancel one of the signed-in user's own reservations

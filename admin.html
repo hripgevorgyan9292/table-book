@@ -135,6 +135,25 @@
     </div>
   </div>
 
+  <!-- Ամրագրման մերժում՝ հյուրին ուղարկվող հաղորդագրությամբ -->
+  <div class="modal-overlay" id="rejectModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rejectFormTitle">
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="rejectFormTitle" data-i18n="rejectTitle">Reject booking</h2>
+      <p class="reject-booking" id="rejectBookingInfo"></p>
+      <form id="rejectForm" novalidate>
+        <p class="reject-label" data-i18n="rejectTemplatesLabel">Ready replies</p>
+        <div class="reject-templates" id="rejectTemplates"></div>
+        <div class="field">
+          <label for="rejectReason" data-i18n="rejectReasonLabel">Message to the guest</label>
+          <textarea id="rejectReason" name="reason" rows="4" maxlength="300"></textarea>
+          <small class="error-msg" id="rejectReasonError"></small>
+        </div>
+        <button class="submit-btn" type="submit" data-i18n="rejectSubmit">Reject and send</button>
+      </form>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="i18n.js"></script>

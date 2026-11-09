@@ -713,16 +713,35 @@ const restaurantsCity = document.getElementById("restaurantsCity");
 const bookCity = document.getElementById("bookCity");
 let restaurants = [];
 
+// Էջում ցույց է տրվում ընտրված քաղաքի ռեստորաններից 9 պատահական ռեստորան.
+// ցանկը նորից է ընտրվում բեռնելիս, քաղաքը փոխելիս և ամեն 10 րոպեն մեկ
+const SHOWN_RESTAURANTS = 9;
+const RESTAURANTS_REFRESH_MS = 10 * 60 * 1000;
+let shownRestaurantIds = [];
+
+function pickShownRestaurants() {
+  const list = restaurants.filter(inCity(restaurantsCity.value));
+  // Ֆիշեր–Յեյթսի խառնում, որից վերցվում են առաջին 9-ը
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  shownRestaurantIds = list.slice(0, SHOWN_RESTAURANTS).map((r) => r.id);
+}
+
 async function loadRestaurants() {
   try {
     const response = await fetch("/api/restaurants");
     if (!response.ok) return;
     restaurants = (await response.json()).restaurants;
     fillCitySelects();
+    pickShownRestaurants();
     renderRestaurants();
     fillRestaurantSelect();
   } catch (e) {}
 }
+
+setInterval(loadRestaurants, RESTAURANTS_REFRESH_MS);
 
 // Քաղաքների ցանկերը՝ ամեն քաղաքի կողքին այնտեղի ռեստորանների քանակով
 function fillCitySelects() {
@@ -736,6 +755,7 @@ const inCity = (city) => (restaurant) => !city || restaurant.city === city;
 
 // Ռեստորանների բաժնում քաղաք ընտրելիս նույն քաղաքն ընտրվում է նաև ամրագրման ձևում
 restaurantsCity.addEventListener("change", () => {
+  pickShownRestaurants();
   renderRestaurants();
   bookCity.value = restaurantsCity.value;
   fillRestaurantSelect();
@@ -771,7 +791,8 @@ function bookAtRestaurant(restaurant) {
 
 function renderRestaurants() {
   restaurantGrid.innerHTML = "";
-  const list = restaurants.filter(inCity(restaurantsCity.value));
+  // Նույն 9-ը մնում են, երբ էջը միայն վերագծվում է (օրինակ՝ լեզուն փոխելիս)
+  const list = shownRestaurantIds.map((id) => restaurants.find((r) => r.id === id)).filter(Boolean);
   restaurantsEmpty.hidden = list.length > 0;
   restaurantsEmpty.textContent = t(restaurants.length ? "noRestaurantsInCity" : "restaurantsEmpty");
 

@@ -31,7 +31,8 @@ const TRANSLATIONS = {
     heroTitle: "TableBook",
     heroText: "Պարզ գործիք, որով հյուրերը կարող են առցանց ամրագրել սեղան, իսկ սրճարանը՝ հեշտությամբ կառավարել ամրագրումները մեկ տեղից։",
 
-    bookingTitle: "Ամրագրում",
+    bookingTitle: "Ռեստորանի ամրագրում",
+    guideTitle: "Ուղեցույց",
     hallTab: "Սրահ",
     chooseRestaurant: "Ընտրեք ռեստորանը ցուցակից։",
     restaurantListAll: "Բոլոր ռեստորանները",
@@ -319,7 +320,8 @@ const TRANSLATIONS = {
     heroTitle: "TableBook",
     heroText: "Простой инструмент: гости бронируют столик онлайн, а кафе легко управляет всеми бронированиями в одном месте.",
 
-    bookingTitle: "Бронирование",
+    bookingTitle: "Бронирование ресторана",
+    guideTitle: "Руководство",
     hallTab: "Зал",
     chooseRestaurant: "Выберите ресторан из списка.",
     restaurantListAll: "Все рестораны",
@@ -608,7 +610,8 @@ const TRANSLATIONS = {
     heroTitle: "TableBook",
     heroText: "A simple tool: guests book a table online, and the café manages all its reservations in one place.",
 
-    bookingTitle: "Booking",
+    bookingTitle: "Restaurant booking",
+    guideTitle: "Guide",
     hallTab: "Floor plan",
     chooseRestaurant: "Choose a restaurant from the list.",
     restaurantListAll: "All restaurants",

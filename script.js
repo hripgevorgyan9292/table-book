@@ -500,6 +500,17 @@ searchForm.addEventListener("submit", (event) => {
   showTab("booking");
 });
 
+// Ձախ վահանակի «Ամրագրում» և «Ուղեցույց» վերնագրերի սլաքները փակում կամ բացում են իրենց բաժինը
+function setSidePanelOpen(toggle, open) {
+  document.getElementById(toggle.getAttribute("aria-controls")).hidden = !open;
+  toggle.setAttribute("aria-expanded", String(open));
+}
+
+const guideToggle = document.getElementById("guideToggle");
+document.querySelectorAll(".side-toggle").forEach((toggle) => {
+  toggle.addEventListener("click", () => setSidePanelOpen(toggle, toggle.getAttribute("aria-expanded") !== "true"));
+});
+
 // ---------- Աջ կողմի ներդիրները. միաժամանակ երևում է միայն մեկ հատված ----------
 
 const contentTabs = document.querySelectorAll(".content-tab");
@@ -516,12 +527,12 @@ function showTab(name) {
 
 contentTabs.forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
 
-// Վերևի մենյուի «Քայլեր» և «Հնարավորություններ» հղումները բացում են իրենց ներդիրը
+// Վերևի մենյուի «Ուղեցույց» և «Հնարավորություններ» հղումները բացում են ձախ վահանակի ուղեցույցը
 document.querySelectorAll('nav a[href^="#"]').forEach((link) => {
   link.addEventListener("click", (event) => {
     event.preventDefault();
-    showTab(link.getAttribute("href").slice(1));
-    document.getElementById("contentTabs").scrollIntoView({ behavior: "smooth" });
+    setSidePanelOpen(guideToggle, true);
+    document.getElementById(link.getAttribute("href").slice(1)).scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
 });
 

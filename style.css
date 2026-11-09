@@ -2065,11 +2065,11 @@ footer {
   margin-top: 4px;
 }
 
-/* «Իմ ամրագրումները» ձախ վահանակում. պատուհանը բացվում է դեպի աջ՝ էջի բովանդակության վրա */
+/* «Իմ ամրագրումները» ձախ վահանակի վերևում՝ «Ամրագրում»-ից առաջ. պատուհանը բացվում է դեպի աջ՝ էջի բովանդակության վրա */
 .sidebar .my-panel {
-  padding: 14px 0 0;
-  border-top: 1px solid var(--border);
-  border-bottom: none;
+  padding: 0 0 14px;
+  border-top: none;
+  border-bottom: 1px solid var(--border);
 }
 
 .sidebar .my-toggle {
@@ -2596,3 +2596,265 @@ header .container { max-width: 1280px; }
   border: 3px solid var(--bg);
   border-radius: 999px;
 }
+
+/* «Ամրագրում» վերնագիրը՝ սլաքով կոճակ, որը փակում և բացում է ձևը */
+.side-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.side-toggle .my-chevron { font-size: 0.9rem; }
+
+.side-toggle[aria-expanded="true"] .my-chevron { transform: rotate(180deg); }
+
+.side-fields[hidden] { display: none; }
+
+.side-form:has(.side-fields[hidden]) .side-title { margin-bottom: 0; }
+
+/* Ձախ վահանակի երկու բաժինները («Իմ ամրագրումները» և «Ամրագրում»)՝ նույն տեսքով և գույներով */
+.sidebar .side-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sidebar .my-toggle,
+.sidebar .side-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  transition: border-color 0.15s;
+}
+
+.sidebar .my-toggle:hover,
+.sidebar .side-toggle:hover { border-color: var(--accent); }
+
+.sidebar .my-toggle .my-chevron,
+.sidebar .side-toggle .my-chevron {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+/* «Ուղեցույց»՝ ձախ վահանակում, նույն ոճով, ինչ «Ամրագրում»-ը. քայլերը՝ մեկ սյունակով */
+.sidebar #how {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.side-lead {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sidebar #how .steps {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.sidebar #how .steps li {
+  flex-direction: row;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.sidebar #how .steps li::after { display: none; }
+
+.sidebar #how .step-num {
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+}
+
+.sidebar #how .steps h3 {
+  margin: 0 0 2px;
+  font-size: 0.88rem;
+}
+
+.sidebar #how .steps p {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Վահանակների վերնագրերը՝ միշտ մեկ տողում */
+.sidebar .my-toggle > span:first-child,
+.sidebar .side-toggle > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* «Հնարավորություններ»՝ ուղեցույցի ներսում, քայլերից հետո. փոքր քարտեր՝ պատկերակը ձախից */
+.side-subtitle {
+  margin: 16px 0 8px;
+  font-size: 0.9rem;
+}
+
+.side-features {
+  display: grid;
+  gap: 8px;
+}
+
+.side-features .card {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  column-gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.side-features .icon {
+  grid-row: span 2;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.side-features .card h3 {
+  margin: 0 0 2px;
+  font-size: 0.88rem;
+}
+
+.side-features .card p {
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* Նախկին «Հնարավորություններ» ներդիրի տարածությունները ուղեցույցի վերնագրի վրա չեն կիրառվում */
+.sidebar #features {
+  padding: 0;
+  margin: 16px 0 8px;
+}
+
+/* ---------- «Ուղեցույց»՝ գեղեցիկ և էջի ոճով ---------- */
+
+.sidebar #how .side-lead {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+/* Քայլերը՝ ժամանակագրության պես. համարները ոսկեգույն շրջաններ են՝ միացված ուղղահայաց գծով */
+.sidebar #how .steps {
+  position: relative;
+  gap: 14px;
+  padding-left: 2px;
+}
+
+.sidebar #how .steps::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 14px;
+  width: 2px;
+  background: linear-gradient(var(--accent), var(--accent-soft));
+  border-radius: 2px;
+}
+
+.sidebar #how .steps li {
+  position: relative;
+  gap: 12px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.sidebar #how .steps li:hover { border-color: transparent; }
+
+.sidebar #how .step-num {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 4px var(--surface);
+  font-size: 0.8rem;
+}
+
+.sidebar #how .steps h3 {
+  margin: 4px 0 2px;
+  font-size: 0.9rem;
+}
+
+.sidebar #how .steps p { color: var(--muted); }
+
+/* «Հնարավորություններ»՝ ենթավերնագիր ոսկեգույն գծիկով և մեկ ընդհանուր քարտ՝ տողերով */
+.sidebar #features {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 10px;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+.sidebar #features::before {
+  content: "";
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.side-features {
+  gap: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.side-features .card {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 10px 12px;
+  transition: background 0.15s;
+}
+
+.side-features .card + .card { border-top: 1px solid var(--border); }
+
+.side-features .card:hover { background: var(--accent-soft); }
+
+.side-features .icon {
+  border-radius: 50%;
+  background: var(--accent-soft);
+}
+
+.side-features .card:hover .icon { background: var(--surface); }
+
+.side-features .card p { color: var(--muted); }

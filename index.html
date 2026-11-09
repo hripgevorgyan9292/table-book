@@ -12,7 +12,7 @@
     <div class="container header-inner">
       <div class="logo">Table<span>Book</span></div>
       <nav>
-        <a href="#how" data-i18n="navHow">Steps</a>
+        <a href="#how" data-i18n="guideTitle">Guide</a>
         <a href="#features" data-i18n="navFeatures">Features</a>
       </nav>
       <div class="header-actions">
@@ -34,31 +34,6 @@
   <main class="app-layout">
     <!-- Ձախում՝ ամրագրման գործիքները և «Իմ ամրագրումները» -->
     <aside class="sidebar" aria-label="Booking">
-      <form class="side-form" id="searchForm" novalidate>
-        <h2 class="side-title" data-i18n="bookingTitle">Booking</h2>
-        <div class="field">
-          <label for="bookCity" data-i18n="labelCity">City</label>
-          <select id="bookCity" name="city"></select>
-        </div>
-        <div class="field">
-          <label for="bookRestaurant" data-i18n="labelRestaurant">Restaurant</label>
-          <select id="bookRestaurant" name="restaurant"></select>
-        </div>
-        <div class="field">
-          <label for="bookDate" data-i18n="labelDate">Date</label>
-          <input type="date" id="bookDate" name="date">
-        </div>
-        <div class="field">
-          <label for="bookTime" data-i18n="labelTime">Time</label>
-          <select id="bookTime" name="time"></select>
-        </div>
-        <div class="field">
-          <label for="bookGuests" data-i18n="labelGuests">Guests</label>
-          <select id="bookGuests" name="guests"></select>
-        </div>
-        <button class="search-btn" type="submit" data-i18n="findTable">Find a free table</button>
-      </form>
-
       <!-- Մուտք գործած հյուրի ամրագրումները և ռեստորանի պատասխանները -->
       <section class="my-panel" id="myBookings" hidden>
         <div class="my-bar">
@@ -71,6 +46,117 @@
             <p class="my-bookings-empty" id="myBookingsEmpty" data-i18n="myBookingsEmpty" hidden>You have no bookings yet.</p>
             <ul class="my-bookings-grid" id="myBookingsList"></ul>
             <p class="my-bookings-note" data-i18n="cancelRule">You can cancel a booking up to 1 hour before it starts.</p>
+          </div>
+        </div>
+      </section>
+
+      <form class="side-form" id="searchForm" novalidate>
+        <!-- Վերնագիրը սլաքով կոճակ է. սեղմելիս ձևը փակվում կամ բացվում է -->
+        <h2 class="side-title">
+          <button class="side-toggle" id="bookingToggle" type="button" aria-expanded="true" aria-controls="bookingFields">
+            <span data-i18n="bookingTitle">Restaurant booking</span>
+            <span class="my-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div class="side-fields" id="bookingFields">
+          <div class="field">
+            <label for="bookCity" data-i18n="labelCity">City</label>
+            <select id="bookCity" name="city"></select>
+          </div>
+          <div class="field">
+            <label for="bookRestaurant" data-i18n="labelRestaurant">Restaurant</label>
+            <select id="bookRestaurant" name="restaurant"></select>
+          </div>
+          <div class="field">
+            <label for="bookDate" data-i18n="labelDate">Date</label>
+            <input type="date" id="bookDate" name="date">
+          </div>
+          <div class="field">
+            <label for="bookTime" data-i18n="labelTime">Time</label>
+            <select id="bookTime" name="time"></select>
+          </div>
+          <div class="field">
+            <label for="bookGuests" data-i18n="labelGuests">Guests</label>
+            <select id="bookGuests" name="guests"></select>
+          </div>
+          <button class="search-btn" type="submit" data-i18n="findTable">Find a free table</button>
+        </div>
+      </form>
+
+      <!-- Ուղեցույց՝ ամրագրման քայլերը, նույն սլաքով վերնագրով -->
+      <section class="side-guide" id="how">
+        <h2 class="side-title">
+          <button class="side-toggle" id="guideToggle" type="button" aria-expanded="false" aria-controls="guideBody">
+            <span data-i18n="guideTitle">Guide</span>
+            <span class="my-chevron" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div class="side-fields" id="guideBody" hidden>
+          <p class="side-lead" data-i18n="howLead">Booking takes just a few steps.</p>
+          <ol class="steps">
+            <li>
+              <div class="step-num">1</div>
+              <div>
+                <h3 data-i18n="how1Title">Pick a time</h3>
+                <p data-i18n="how1Text">Chooses the date, time and number of guests on the site.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-num">2</div>
+              <div>
+                <h3 data-i18n="how2Title">Choose a table</h3>
+                <p data-i18n="how2Text">The system shows only the tables that are free at the chosen time.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-num">3</div>
+              <div>
+                <h3 data-i18n="how3Title">Add details</h3>
+                <p data-i18n="how3Text">Enters a name and phone number, then confirms the booking.</p>
+              </div>
+            </li>
+            <li>
+              <div class="step-num">4</div>
+              <div>
+                <h3 data-i18n="how4Title">Café confirms</h3>
+                <p data-i18n="how4Text">The booking appears right away on the café's admin page, where it can be confirmed or cancelled.</p>
+              </div>
+            </li>
+          </ol>
+
+          <!-- Հնարավորությունները՝ նույն ուղեցույցում, քայլերից հետո -->
+          <h3 class="side-subtitle" id="features" data-i18n="featTitle">Features</h3>
+          <div class="side-features">
+            <div class="card">
+              <div class="icon">📅</div>
+              <h3 data-i18n="feat1Title">Online booking</h3>
+              <p data-i18n="feat1Text">Guests can book a table at any time of day.</p>
+            </div>
+            <div class="card">
+              <div class="icon">🪑</div>
+              <h3 data-i18n="feat2Title">Tables</h3>
+              <p data-i18n="feat2Text">Add tables and set their number of seats and location.</p>
+            </div>
+            <div class="card">
+              <div class="icon">⏰</div>
+              <h3 data-i18n="feat3Title">No double booking</h3>
+              <p data-i18n="feat3Text">The system won't let the same table be booked twice for the same time.</p>
+            </div>
+            <div class="card">
+              <div class="icon">📋</div>
+              <h3 data-i18n="feat4Title">Booking list</h3>
+              <p data-i18n="feat4Text">All of the day's bookings on one page, sorted by time.</p>
+            </div>
+            <div class="card">
+              <div class="icon">✅</div>
+              <h3 data-i18n="feat5Title">Confirm &amp; cancel</h3>
+              <p data-i18n="feat5Text">The café can confirm, change or cancel any booking.</p>
+            </div>
+            <div class="card">
+              <div class="icon">📱</div>
+              <h3 data-i18n="feat6Title">Any device</h3>
+              <p data-i18n="feat6Text">Works on computers, tablets and phones, in light and dark mode.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -88,8 +174,6 @@
       <nav class="content-tabs" id="contentTabs" role="tablist">
         <button class="content-tab active" type="button" role="tab" data-tab="restaurants" data-i18n="restaurantsTitle">Restaurants</button>
         <button class="content-tab" type="button" role="tab" data-tab="booking" data-i18n="hallTab">Floor plan</button>
-        <button class="content-tab" type="button" role="tab" data-tab="how" data-i18n="howTitle">Steps</button>
-        <button class="content-tab" type="button" role="tab" data-tab="features" data-i18n="featTitle">Features</button>
       </nav>
 
       <section id="restaurants" class="tab-panel" role="tabpanel">
@@ -194,77 +278,6 @@
               <button class="search-btn" id="bookBtn" type="button" data-i18n="bookNow">Book</button>
             </div>
           </aside>
-        </div>
-      </section>
-
-      <section id="how" class="tab-panel" role="tabpanel" hidden>
-        <h2 data-i18n="howTitle">Steps</h2>
-        <p class="section-lead" data-i18n="howLead">Booking takes just a few steps.</p>
-        <ol class="steps">
-          <li>
-            <div class="step-num">1</div>
-            <div>
-              <h3 data-i18n="how1Title">Pick a time</h3>
-              <p data-i18n="how1Text">Chooses the date, time and number of guests on the site.</p>
-            </div>
-          </li>
-          <li>
-            <div class="step-num">2</div>
-            <div>
-              <h3 data-i18n="how2Title">Choose a table</h3>
-              <p data-i18n="how2Text">The system shows only the tables that are free at the chosen time.</p>
-            </div>
-          </li>
-          <li>
-            <div class="step-num">3</div>
-            <div>
-              <h3 data-i18n="how3Title">Add details</h3>
-              <p data-i18n="how3Text">Enters a name and phone number, then confirms the booking.</p>
-            </div>
-          </li>
-          <li>
-            <div class="step-num">4</div>
-            <div>
-              <h3 data-i18n="how4Title">Café confirms</h3>
-              <p data-i18n="how4Text">The booking appears right away on the café's admin page, where it can be confirmed or cancelled.</p>
-            </div>
-          </li>
-        </ol>
-      </section>
-      
-      <section id="features" class="tab-panel" role="tabpanel" hidden>
-        <h2 data-i18n="featTitle">Features</h2>
-        <div class="grid">
-          <div class="card">
-            <div class="icon">📅</div>
-            <h3 data-i18n="feat1Title">Online booking</h3>
-            <p data-i18n="feat1Text">Guests can book a table at any time of day.</p>
-          </div>
-          <div class="card">
-            <div class="icon">🪑</div>
-            <h3 data-i18n="feat2Title">Tables</h3>
-            <p data-i18n="feat2Text">Add tables and set their number of seats and location.</p>
-          </div>
-          <div class="card">
-            <div class="icon">⏰</div>
-            <h3 data-i18n="feat3Title">No double booking</h3>
-            <p data-i18n="feat3Text">The system won't let the same table be booked twice for the same time.</p>
-          </div>
-          <div class="card">
-            <div class="icon">📋</div>
-            <h3 data-i18n="feat4Title">Booking list</h3>
-            <p data-i18n="feat4Text">All of the day's bookings on one page, sorted by time.</p>
-          </div>
-          <div class="card">
-            <div class="icon">✅</div>
-            <h3 data-i18n="feat5Title">Confirm &amp; cancel</h3>
-            <p data-i18n="feat5Text">The café can confirm, change or cancel any booking.</p>
-          </div>
-          <div class="card">
-            <div class="icon">📱</div>
-            <h3 data-i18n="feat6Title">Any device</h3>
-            <p data-i18n="feat6Text">Works on computers, tablets and phones, in light and dark mode.</p>
-          </div>
         </div>
       </section>
     </div>

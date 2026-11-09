@@ -7,7 +7,9 @@
     "start": "node server.js",
     "make-admin": "node make-admin.js",
     "seed": "node seeders/super-admin.js",
-    "seed:restaurants": "node seeders/restaurants.js"
+    "seed:restaurants": "node seeders/restaurants.js",
+    "seed:menus": "node seeders/menus.js",
+    "seed:dish-photos": "node seeders/dish-photos.js"
   },
   "engines": {
     "node": ">=22.13"

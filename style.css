@@ -207,6 +207,9 @@ section h2 {
   margin: 0 0 8px;
 }
 
+/* «Հնարավորություններ» բաժինը նկարագրություն չունի, քարտերը գալիս են անմիջապես վերնագրից հետո */
+#features h2 { margin-bottom: 24px; }
+
 .section-lead {
   color: var(--muted);
   margin: 0 0 28px;

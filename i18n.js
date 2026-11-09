@@ -66,7 +66,6 @@ const TRANSLATIONS = {
     how4Text: "Ամրագրումն անմիջապես հայտնվում է սրճարանի կառավարման էջում, որտեղ այն կարելի է հաստատել կամ չեղարկել։",
 
     featTitle: "Հնարավորություններ",
-    featLead: "Այն ամենը, ինչ անհրաժեշտ է փոքր սրճարանին։",
     feat1Title: "Առցանց ամրագրում",
     feat1Text: "Հյուրերը կարող են սեղան ամրագրել օրվա ցանկացած ժամի։",
     feat2Title: "Սեղաններ",
@@ -291,7 +290,6 @@ const TRANSLATIONS = {
     how4Text: "Бронь сразу появляется на странице управления кафе, где её можно подтвердить или отменить.",
 
     featTitle: "Возможности",
-    featLead: "Всё, что нужно небольшому кафе.",
     feat1Title: "Онлайн-бронь",
     feat1Text: "Гости могут забронировать столик в любое время суток.",
     feat2Title: "Столики",
@@ -517,7 +515,6 @@ const TRANSLATIONS = {
     how4Text: "The booking appears right away on the café's admin page, where it can be confirmed or cancelled.",
 
     featTitle: "Features",
-    featLead: "Everything a small café needs.",
     feat1Title: "Online booking",
     feat1Text: "Guests can book a table at any time of day.",
     feat2Title: "Tables",

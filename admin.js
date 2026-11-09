@@ -405,6 +405,7 @@ function fillTablesRestaurantSelect() {
   list.forEach((restaurant) => atRestaurant.add(new Option(restaurant.name, restaurant.id)));
   if (list.some((restaurant) => String(restaurant.id) === previous)) atRestaurant.value = previous;
   loadAdminTables();
+  renderRestaurantDetail();
 }
 
 async function loadAdminTables() {
@@ -465,7 +466,30 @@ function renderAdminTables() {
   });
 }
 
-atForm.addEventListener("change", loadAdminTables);
+atForm.addEventListener("change", (event) => {
+  loadAdminTables();
+  // Ռեստորան, օր կամ ժամ ընտրելիս բացվում է «Ռեստորաններ» ներդիրը՝ ընտրված ռեստորանով և նրա սեղաններով
+  if (event.target !== atCity) {
+    renderRestaurants();
+    showTab("restaurantsTab");
+  }
+});
+
+// ---------- Աջ կողմի ներդիրները. միաժամանակ երևում է միայն մեկ հատված ----------
+
+const contentTabs = document.querySelectorAll(".content-tab");
+const tabPanels = document.querySelectorAll(".tab-panel");
+
+function showTab(name) {
+  tabPanels.forEach((panel) => { panel.hidden = panel.id !== name; });
+  contentTabs.forEach((tab) => {
+    const active = tab.dataset.tab === name;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+}
+
+contentTabs.forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
 
 // ---------- Ռեստորաններ՝ ավելացնել, փոխել, ջնջել ----------
 
@@ -530,86 +554,123 @@ function searchRestaurants(query) {
   });
 }
 
-restaurantSearch.addEventListener("input", renderRestaurants);
+// Ձախում որոնելիս բացվում է «Ռեստորաններ» ներդիրը
+restaurantSearch.addEventListener("input", () => {
+  renderRestaurants();
+  showTab("restaurantsTab");
+});
 
+// Ցուցակի վերևի փոքր սլաքով կոճակը. բացված վիճակում երևում են ընտրված քաղաքի բոլոր ռեստորանները
+const restaurantListToggle = document.getElementById("restaurantListToggle");
+// Սկզբից ցուցակում բոլոր ռեստորաններն են. սյունակում երևում է այնքանը, որքան տեղավորվում է, մնացածը՝ թերթելով
+let showAllRestaurants = true;
+
+restaurantListToggle.addEventListener("click", () => {
+  showAllRestaurants = !showAllRestaurants;
+  renderRestaurants();
+});
+
+// Ձախում՝ ռեստորանների կոմպակտ ցուցակը. ընտրվածը նույնն է, ինչ ձախ վահանակի «Ռեստորան»-ը
 function renderRestaurants() {
   restaurantGrid.innerHTML = "";
   const query = restaurantSearch.value.trim();
-  // Որոնելիս երևում են բոլոր գտնվածները, առանց որոնման՝ 9 պատահականները
+  const inCity = restaurants.filter((r) => !atCity.value || r.city === atCity.value);
+  // Որոնելիս երևում են բոլոր գտնվածները, բացված ցուցակում՝ քաղաքի բոլոր ռեստորանները (այբբենական կարգով),
+  // իսկ փակ ցուցակում՝ 9 պատահականները
   const list = query
     ? searchRestaurants(query)
-    : shownRestaurantIds.map((id) => restaurants.find((r) => r.id === id)).filter(Boolean);
+    : showAllRestaurants
+      ? [...inCity].sort((a, b) => a.name.localeCompare(b.name))
+      : shownRestaurantIds.map((id) => restaurants.find((r) => r.id === id)).filter(Boolean);
+  restaurantListToggle.hidden = Boolean(query) || inCity.length <= SHOWN_RESTAURANTS;
+  restaurantListToggle.setAttribute("aria-expanded", String(showAllRestaurants));
+  // Կոճակին միայն սլաքն է, իսկ բացատրությունը՝ հուշման մեջ
+  const toggleLabel = showAllRestaurants ? t("restaurantListLess") : t("restaurantListAll", { n: inCity.length });
+  restaurantListToggle.title = toggleLabel;
+  restaurantListToggle.setAttribute("aria-label", toggleLabel);
   restaurantSearchCount.textContent = query ? t("restaurantSearchFound", { n: list.length }) : "";
   restaurantsEmpty.hidden = list.length > 0;
   restaurantsEmpty.textContent = t(query ? "restaurantSearchNone" : restaurants.length ? "noRestaurantsInCity" : "restaurantsEmpty");
 
   list.forEach((restaurant) => {
-    const card = document.createElement("div");
-    card.className = "card photo-card";
-
-    if (restaurant.imageUrl.startsWith("https://")) {
-      const img = document.createElement("img");
-      img.src = restaurant.imageUrl;
-      img.alt = restaurant.name;
-      img.loading = "lazy";
-      card.appendChild(img);
-    } else {
-      const placeholder = document.createElement("div");
-      placeholder.className = "restaurant-noimg";
-      placeholder.textContent = "🍽️";
-      card.appendChild(placeholder);
-    }
-
-    if (restaurant.cuisine) {
-      const badge = document.createElement("span");
-      badge.className = "cuisine-badge";
-      badge.textContent = restaurant.cuisine;
-      card.appendChild(badge);
-    }
-
-    const name = document.createElement("h3");
+    const item = document.createElement("li");
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "rest-row" + (String(restaurant.id) === atRestaurant.value ? " active" : "");
+    row.appendChild(restaurantThumb(restaurant, "rest-row-thumb"));
+    const text = document.createElement("span");
+    text.className = "rest-row-text";
+    const name = document.createElement("strong");
     name.textContent = restaurant.name;
-    card.appendChild(name);
-
-    card.appendChild(restaurantLocation(restaurant));
-
-    const actions = document.createElement("div");
-    actions.className = "admin-actions";
-    // «Tables»՝ ցույց տալ այս ռեստորանի ազատ և զբաղված սեղանները
-    const tablesBtn = document.createElement("button");
-    tablesBtn.type = "button";
-    tablesBtn.className = "search-btn";
-    tablesBtn.textContent = t("tablesBtn");
-    tablesBtn.addEventListener("click", () => {
-      if (atCity.value && atCity.value !== restaurant.city) {
-        atCity.value = restaurant.city;
-        fillTablesRestaurantSelect();
-      }
-      atRestaurant.value = restaurant.id;
-      loadAdminTables();
-      document.getElementById("adminTables").scrollIntoView({ behavior: "smooth" });
-    });
-    actions.appendChild(tablesBtn);
-    const editBtn = document.createElement("button");
-    editBtn.type = "button";
-    editBtn.className = "outline-btn";
-    editBtn.textContent = t("editBtn");
-    editBtn.addEventListener("click", () => openRestaurantForm(restaurant));
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "cancel-btn";
-    deleteBtn.textContent = t("deleteBtn");
-    deleteBtn.addEventListener("click", () => deleteRestaurant(restaurant, deleteBtn));
-    const menuBtn = document.createElement("button");
-    menuBtn.type = "button";
-    menuBtn.className = "outline-btn";
-    menuBtn.textContent = t("menuBtn");
-    menuBtn.addEventListener("click", () => openMenuEditor(restaurant));
-    actions.append(menuBtn, editBtn, deleteBtn);
-    card.appendChild(actions);
-
-    restaurantGrid.appendChild(card);
+    const meta = document.createElement("span");
+    meta.textContent = [cityName(restaurant.city), restaurant.cuisine].filter(Boolean).join(" · ");
+    text.append(name, meta);
+    row.appendChild(text);
+    row.addEventListener("click", () => selectRestaurant(restaurant));
+    item.appendChild(row);
+    restaurantGrid.appendChild(item);
   });
+  renderRestaurantDetail();
+}
+
+// Ռեստորանի նկարը կամ 🍽️, եթե նկար չկա
+function restaurantThumb(restaurant, className) {
+  const box = document.createElement("span");
+  box.className = className;
+  if (restaurant.imageUrl.startsWith("https://")) {
+    const img = document.createElement("img");
+    img.src = restaurant.imageUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    box.appendChild(img);
+  } else {
+    box.textContent = "🍽️";
+  }
+  return box;
+}
+
+// Ցուցակից ընտրելիս ձախ վահանակի քաղաքը և ռեստորանը փոխվում են, և բեռնվում են նրա սեղանները
+function selectRestaurant(restaurant) {
+  if (atCity.value && atCity.value !== restaurant.city) {
+    atCity.value = restaurant.city;
+    fillTablesRestaurantSelect();
+  }
+  atRestaurant.value = restaurant.id;
+  loadAdminTables();
+  renderRestaurants();
+}
+
+const restaurantDetail = document.getElementById("restaurantDetail");
+const restaurantDetailEmpty = document.getElementById("restaurantDetailEmpty");
+
+// Աջում՝ ընտրված ռեստորանը. նկար, տվյալներ, «Ճաշացանկ», «Փոխել», «Ջնջել» և սեղանները
+function renderRestaurantDetail() {
+  const restaurant = restaurants.find((r) => String(r.id) === atRestaurant.value);
+  restaurantDetail.hidden = !restaurant;
+  restaurantDetailEmpty.hidden = Boolean(restaurant);
+  if (!restaurant) return;
+
+  const cover = document.getElementById("rdCover");
+  cover.innerHTML = "";
+  cover.appendChild(restaurantThumb(restaurant, "rest-cover-img"));
+  document.getElementById("rdName").textContent = restaurant.name;
+  document.getElementById("rdMeta").textContent =
+    [restaurant.cuisine, cityName(restaurant.city), restaurant.address].filter(Boolean).join(" · ");
+  document.getElementById("rdDesc").textContent = restaurant.description;
+
+  const actions = document.getElementById("rdActions");
+  actions.innerHTML = "";
+  const button = (label, className, onClick) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = className;
+    btn.textContent = t(label);
+    btn.addEventListener("click", () => onClick(btn));
+    actions.appendChild(btn);
+  };
+  button("menuBtn", "search-btn", () => openMenuEditor(restaurant));
+  button("editBtn", "outline-btn", () => openRestaurantForm(restaurant));
+  button("deleteBtn", "cancel-btn", (btn) => deleteRestaurant(restaurant, btn));
 }
 
 // Ձևի պատուհանը. բացել, փակել ×-ով, Esc-ով կամ դուրս սեղմելով

@@ -32,6 +32,10 @@ const TRANSLATIONS = {
     heroText: "Պարզ գործիք, որով հյուրերը կարող են առցանց ամրագրել սեղան, իսկ սրճարանը՝ հեշտությամբ կառավարել ամրագրումները մեկ տեղից։",
 
     bookingTitle: "Ամրագրում",
+    hallTab: "Սրահ",
+    chooseRestaurant: "Ընտրեք ռեստորանը ցուցակից։",
+    restaurantListAll: "Բոլոր ռեստորանները",
+    restaurantListLess: "Ավելի քիչ ռեստորաններ",
     bookingLead: "Ընտրեք ռեստորանը, օրը, ժամը և հյուրերի քանակը, ապա սրահի սխեմայում՝ ազատ սեղաններից մեկը։ Յուրաքանչյուր ամրագրում 1 ժամ է։",
     labelRestaurant: "Ռեստորան",
     labelDate: "Օր",
@@ -316,6 +320,10 @@ const TRANSLATIONS = {
     heroText: "Простой инструмент: гости бронируют столик онлайн, а кафе легко управляет всеми бронированиями в одном месте.",
 
     bookingTitle: "Бронирование",
+    hallTab: "Зал",
+    chooseRestaurant: "Выберите ресторан из списка.",
+    restaurantListAll: "Все рестораны",
+    restaurantListLess: "Меньше ресторанов",
     bookingLead: "Выберите ресторан, день, время и количество гостей, затем — свободный столик на схеме зала. Каждое бронирование — на 1 час.",
     labelRestaurant: "Ресторан",
     labelDate: "День",
@@ -601,6 +609,10 @@ const TRANSLATIONS = {
     heroText: "A simple tool: guests book a table online, and the café manages all its reservations in one place.",
 
     bookingTitle: "Booking",
+    hallTab: "Floor plan",
+    chooseRestaurant: "Choose a restaurant from the list.",
+    restaurantListAll: "All restaurants",
+    restaurantListLess: "Fewer restaurants",
     bookingLead: "Choose a restaurant, the day, time and number of guests, then pick a free table on the floor plan. Each booking is for 1 hour.",
     labelRestaurant: "Restaurant",
     labelDate: "Date",

@@ -497,6 +497,32 @@ searchForm.addEventListener("change", () => {
 searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
   searchTables();
+  showTab("booking");
+});
+
+// ---------- Աջ կողմի ներդիրները. միաժամանակ երևում է միայն մեկ հատված ----------
+
+const contentTabs = document.querySelectorAll(".content-tab");
+const tabPanels = document.querySelectorAll(".tab-panel");
+
+function showTab(name) {
+  tabPanels.forEach((panel) => { panel.hidden = panel.id !== name; });
+  contentTabs.forEach((tab) => {
+    const active = tab.dataset.tab === name;
+    tab.classList.toggle("active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+}
+
+contentTabs.forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
+
+// Վերևի մենյուի «Քայլեր» և «Հնարավորություններ» հղումները բացում են իրենց ներդիրը
+document.querySelectorAll('nav a[href^="#"]').forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    showTab(link.getAttribute("href").slice(1));
+    document.getElementById("contentTabs").scrollIntoView({ behavior: "smooth" });
+  });
 });
 
 function askToLogin() {
@@ -720,18 +746,17 @@ async function cancelBooking(booking, btn) {
 
 const restaurantGrid = document.getElementById("restaurantGrid");
 const restaurantsEmpty = document.getElementById("restaurantsEmpty");
-const restaurantsCity = document.getElementById("restaurantsCity");
 const bookCity = document.getElementById("bookCity");
 let restaurants = [];
 
-// Էջում ցույց է տրվում ընտրված քաղաքի ռեստորաններից 9 պատահական ռեստորան.
+// Էջում ցույց է տրվում ձախ վահանակում ընտրված քաղաքի ռեստորաններից 9 պատահական ռեստորան.
 // ցանկը նորից է ընտրվում բեռնելիս, քաղաքը փոխելիս և ամեն 10 րոպեն մեկ
 const SHOWN_RESTAURANTS = 9;
 const RESTAURANTS_REFRESH_MS = 10 * 60 * 1000;
 let shownRestaurantIds = [];
 
 function pickShownRestaurants() {
-  const list = restaurants.filter(inCity(restaurantsCity.value));
+  const list = restaurants.filter(inCity(bookCity.value));
   // Ֆիշեր–Յեյթսի խառնում, որից վերցվում են առաջին 9-ը
   for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -758,21 +783,17 @@ setInterval(loadRestaurants, RESTAURANTS_REFRESH_MS);
 function fillCitySelects() {
   const counts = {};
   restaurants.forEach((r) => { counts[r.city] = (counts[r.city] || 0) + 1; });
-  fillCitySelect(restaurantsCity, { allLabel: true, counts });
   fillCitySelect(bookCity, { allLabel: true, counts });
 }
 
 const inCity = (city) => (restaurant) => !city || restaurant.city === city;
 
-// Ռեստորանների բաժնում քաղաք ընտրելիս նույն քաղաքն ընտրվում է նաև ամրագրման ձևում
-restaurantsCity.addEventListener("change", () => {
+// Ձախ վահանակի քաղաքը փոխում է և՛ ռեստորանների քարտերը, և՛ «Ռեստորան» ցանկը
+bookCity.addEventListener("change", () => {
   pickShownRestaurants();
   renderRestaurants();
-  bookCity.value = restaurantsCity.value;
   fillRestaurantSelect();
 });
-
-bookCity.addEventListener("change", fillRestaurantSelect);
 
 // Ամրագրման ձևի «Restaurant» ցանկը՝ ընտրված քաղաքի ռեստորաններից, ընտրվածը պահելով
 function fillRestaurantSelect() {
@@ -797,7 +818,8 @@ function bookAtRestaurant(restaurant) {
   }
   bookRestaurant.value = restaurant.id;
   searchTables();
-  document.getElementById("booking").scrollIntoView({ behavior: "smooth" });
+  showTab("booking");
+  document.getElementById("contentTabs").scrollIntoView({ behavior: "smooth" });
 }
 
 function renderRestaurants() {

@@ -7,7 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
   <link rel="stylesheet" href="style.css?v=2">
 </head>
-<body>
+<body class="admin-page">
   <header>
     <div class="container header-inner">
       <a class="logo logo-link" href="/">Table<span>Book</span> <span class="admin-tag" data-i18n="adminTag">Admin</span></a>
@@ -25,7 +25,7 @@
     </div>
   </header>
 
-  <main class="container">
+  <main class="admin-main">
     <!-- Մուտքի պատուհան -->
     <section class="admin-box" id="loginView" hidden>
       <h1 data-i18n="adminLoginTitle">Admin login</h1>
@@ -51,59 +51,90 @@
       <p class="section-lead" data-i18n="accessDeniedText">This account is not an admin. Log out and log in with an admin account.</p>
     </section>
 
-    <!-- Ադմինի պանել -->
-    <section id="panelView" hidden>
-      <h1 id="adminWelcome"></h1>
+    <!-- Ադմինի պանել. ձախում՝ գործիքները, աջում՝ ներդիրներ (միաժամանակ մեկ հատված) -->
+    <section id="panelView" class="app-layout" hidden>
+      <aside class="sidebar" aria-label="Filters">
+        <!-- Քաղաք, ռեստորան, օր և ժամ՝ սեղանների և ռեստորանների քարտերի համար -->
+        <form class="side-form" id="adminTablesForm" novalidate>
+          <div class="field">
+            <label for="atCity" data-i18n="labelCity">City</label>
+            <select id="atCity" name="city"></select>
+          </div>
+          <div class="field">
+            <label for="atRestaurant" data-i18n="labelRestaurant">Restaurant</label>
+            <select id="atRestaurant" name="restaurant"></select>
+          </div>
+          <div class="field">
+            <label for="atDate" data-i18n="labelDate">Date</label>
+            <input type="date" id="atDate" name="date">
+          </div>
+          <div class="field">
+            <label for="atTime" data-i18n="labelTime">Time</label>
+            <select id="atTime" name="time">
+              <option value="" data-i18n="allDay">All day</option>
+            </select>
+          </div>
+        </form>
 
-      <!-- Բոլոր հյուրերի առաջիկա ամրագրումները՝ «Հաստատել» կոճակով -->
-      <div class="admin-section">
-        <h2 data-i18n="adminBookingsTitle">Bookings</h2>
-        <p class="restaurants-empty" id="adminBookingsEmpty" hidden data-i18n="adminBookingsEmpty">No upcoming bookings.</p>
-        <!-- Ամրագրումները՝ ըստ քաղաքների. նոր ամրագրում ունեցող քաղաքի կոճակը փայլում է -->
-        <div class="booking-city-groups" id="adminBookingsList"></div>
-      </div>
+        <button class="search-btn" id="addRestaurantBtn" type="button" data-i18n="addRestaurant">+ Add restaurant</button>
+      </aside>
 
-      <!-- Ռեստորաններ. սեղանների զբաղվածությունը և ցուցակի կառավարումը -->
-      <div class="admin-section" id="restaurantsSection">
-        <div class="section-head">
-          <h2 data-i18n="restaurantsTitle">Restaurants</h2>
-          <button class="search-btn" id="addRestaurantBtn" type="button" data-i18n="addRestaurant">+ Add restaurant</button>
-        </div>
+      <div class="content">
+        <h1 id="adminWelcome"></h1>
 
-        <!-- Ազատ և զբաղված սեղաններ՝ ընտրված ռեստորանում և օրում (կամ կոնկրետ ժամին) -->
-        <div class="admin-tables" id="adminTables">
-          <h3 data-i18n="adminTablesTitle">Free and busy tables</h3>
-          <form class="booking-search admin-tables-search" id="adminTablesForm" novalidate>
-            <div class="field">
-              <label for="atCity" data-i18n="labelCity">City</label>
-              <select id="atCity" name="city"></select>
-            </div>
-            <div class="field">
-              <label for="atRestaurant" data-i18n="labelRestaurant">Restaurant</label>
-              <select id="atRestaurant" name="restaurant"></select>
-            </div>
-            <div class="field">
-              <label for="atDate" data-i18n="labelDate">Date</label>
-              <input type="date" id="atDate" name="date">
-            </div>
-            <div class="field">
-              <label for="atTime" data-i18n="labelTime">Time</label>
-              <select id="atTime" name="time">
-                <option value="" data-i18n="allDay">All day</option>
-              </select>
-            </div>
-          </form>
-          <p class="booking-status" id="adminTablesSummary" role="status"></p>
-          <div class="admin-tables-grid" id="adminTablesGrid"></div>
-        </div>
+        <nav class="content-tabs" id="contentTabs" role="tablist">
+          <button class="content-tab active" type="button" role="tab" data-tab="bookingsTab" data-i18n="adminBookingsTitle">Bookings</button>
+          <button class="content-tab" type="button" role="tab" data-tab="restaurantsTab" data-i18n="restaurantsTitle">Restaurants</button>
+        </nav>
 
-        <!-- Որոնում բոլոր ռեստորաններում. դատարկ դաշտի դեպքում երևում են 9 պատահականները -->
-        <div class="restaurant-search">
-          <input type="search" id="restaurantSearch" placeholder="Search by name, cuisine, address or city" data-i18n-placeholder="restaurantSearchPlaceholder" aria-label="Search restaurants" data-i18n-aria="restaurantSearchPlaceholder" autocomplete="off">
-          <span class="restaurant-search-count" id="restaurantSearchCount"></span>
-        </div>
-        <p class="restaurants-empty" id="restaurantsEmpty" hidden data-i18n="restaurantsEmpty">No restaurants yet.</p>
-        <div class="grid" id="restaurantGrid"></div>
+        <!-- Բոլոր հյուրերի առաջիկա ամրագրումները՝ ըստ քաղաքների. նոր ամրագրում ունեցող քաղաքի կոճակը փայլում է -->
+        <section id="bookingsTab" class="tab-panel" role="tabpanel">
+          <h2 data-i18n="adminBookingsTitle">Bookings</h2>
+          <p class="restaurants-empty" id="adminBookingsEmpty" hidden data-i18n="adminBookingsEmpty">No upcoming bookings.</p>
+          <div class="booking-city-groups" id="adminBookingsList"></div>
+        </section>
+
+        <!-- Ռեստորաններ և սեղաններ միասին. ձախում՝ ցուցակը, աջում՝ ընտրված ռեստորանը և նրա սեղանները -->
+        <section id="restaurantsTab" class="tab-panel" role="tabpanel" hidden>
+          <div class="rest-split">
+            <div class="rest-list-wrap">
+              <!-- Որոնում և փոքր սլաքով կոճակ (9 պատահականի փոխարեն՝ բոլոր ռեստորանները) -->
+              <div class="rest-list-head">
+                <div class="restaurant-search">
+                  <input type="search" id="restaurantSearch" placeholder="Search by name, cuisine, address or city" data-i18n-placeholder="restaurantSearchPlaceholder" aria-label="Search restaurants" data-i18n-aria="restaurantSearchPlaceholder" autocomplete="off">
+                  <span class="restaurant-search-count" id="restaurantSearchCount"></span>
+                </div>
+                <button class="rest-list-toggle" id="restaurantListToggle" type="button" aria-expanded="true">
+                  <span class="my-chevron" aria-hidden="true">▾</span>
+                </button>
+              </div>
+              <div class="rest-list-scroll">
+                <p class="restaurants-empty" id="restaurantsEmpty" hidden data-i18n="restaurantsEmpty">No restaurants yet.</p>
+                <ul class="rest-list" id="restaurantGrid"></ul>
+              </div>
+            </div>
+
+            <article class="rest-detail" id="restaurantDetail" hidden>
+              <div class="rest-detail-cover" id="rdCover"></div>
+              <div class="rest-detail-body">
+                <div class="rest-detail-head">
+                  <div>
+                    <h2 id="rdName"></h2>
+                    <p class="rest-detail-meta" id="rdMeta"></p>
+                  </div>
+                  <div class="rest-detail-actions" id="rdActions"></div>
+                </div>
+                <p class="rest-detail-desc" id="rdDesc"></p>
+                <div class="rest-tables-head">
+                  <h3 data-i18n="adminTablesTitle">Free and busy tables</h3>
+                  <p class="booking-status" id="adminTablesSummary" role="status"></p>
+                </div>
+                <div class="admin-tables-grid" id="adminTablesGrid"></div>
+              </div>
+            </article>
+            <p class="rest-detail-empty" id="restaurantDetailEmpty" data-i18n="chooseRestaurant">Choose a restaurant from the list.</p>
+          </div>
+        </section>
       </div>
     </section>
   </main>

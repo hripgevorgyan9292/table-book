@@ -2026,3 +2026,573 @@ footer {
 .booking-city-list { margin-top: 8px; }
 
 .booking-city-list[hidden] { display: none; }
+
+/* ---------- Էջի դասավորություն՝ ձախում գործիքներ, աջում ներդիրներ ---------- */
+
+.app-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.side-title {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.side-form .field { margin-bottom: 10px; }
+
+.side-form .field input,
+.side-form .field select { width: 100%; }
+
+.side-form .search-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* «Իմ ամրագրումները» ձախ վահանակում. պատուհանը բացվում է դեպի աջ՝ էջի բովանդակության վրա */
+.sidebar .my-panel {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+}
+
+.sidebar .my-toggle {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.sidebar .my-body {
+  right: auto;
+  width: min(720px, calc(100vw - 48px));
+}
+
+.content { min-width: 0; }
+
+.content .hero {
+  min-height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.content .hero .container { padding: 0 24px; }
+
+.content-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+
+.content-tab {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.content-tab:hover { border-color: var(--accent); }
+
+.content-tab.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.tab-panel,
+#how.tab-panel,
+#features.tab-panel {
+  padding: 12px 0 0;
+  border-top: none;
+}
+
+.tab-panel[hidden] { display: none; }
+
+@media (max-width: 900px) {
+  .app-layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+}
+
+/* Վերևի ժապավենը նույն լայնությամբ, ինչ էջի դասավորությունը */
+header .container { max-width: 1280px; }
+
+/* Admin էջ՝ մուտքի պատուհանները կենտրոնում, պանելը՝ ձախ վահանակով */
+.admin-main { padding: 0 16px; }
+
+.admin-main .app-layout { padding-left: 0; padding-right: 0; }
+
+.admin-main .content h1 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+}
+
+.sidebar .restaurant-search { margin: 0; }
+
+.sidebar .restaurant-search input { padding-right: 70px; }
+
+.sidebar #addRestaurantBtn { width: 100%; }
+
+.admin-main .tab-panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
+}
+
+/* Քաղաքների խմբերը <section> են, բայց էջի բաժինների մեծ տարածություններն այստեղ պետք չեն */
+.booking-city {
+  padding: 0;
+  border-top: none;
+}
+
+/* =====================================================================
+   Admin էջ՝ ժամանակակից ոճ (միայն <body class="admin-page">)
+   ===================================================================== */
+
+.admin-page {
+  --shadow-sm: 0 1px 2px rgba(46, 42, 37, 0.06), 0 2px 8px rgba(46, 42, 37, 0.05);
+  --shadow-md: 0 4px 12px rgba(46, 42, 37, 0.08), 0 12px 32px rgba(46, 42, 37, 0.06);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, var(--accent-soft), transparent 60%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+[data-theme="dark"] .admin-page {
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Վերևի ժապավեն՝ կիսաթափանցիկ, թերթելիս մնում է վերևում */
+.admin-page header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.admin-page .sidebar {
+  top: 88px;
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 20px;
+}
+
+.admin-page .content h1 {
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+/* Ներդիրներ՝ segmented control */
+.admin-page .content-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 20px;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-page .content-tab {
+  border: none;
+  background: transparent;
+  padding: 8px 20px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.admin-page .content-tab.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-page .tab-panel h2 {
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+/* Ամրագրումների քաղաքները և տողերը */
+.admin-page .booking-city-toggle {
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 18px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.admin-page .booking-city-toggle:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.admin-page .booking-city-list .booking-item {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 16px;
+}
+
+/* Ռեստորաններ՝ ցուցակ ձախում, ընտրվածը աջում */
+.rest-split {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.rest-list-wrap {
+  background: var(--surface);
+  border-radius: var(--radius-lg, 20px);
+  box-shadow: var(--shadow-sm);
+  padding: 8px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.rest-list-wrap .restaurants-empty { padding: 12px; }
+
+.rest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.rest-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rest-row:hover { background: var(--bg); }
+
+.rest-row.active {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.rest-row-thumb {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.rest-row-thumb img,
+.rest-cover-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rest-row-text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.rest-row-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rest-row-text span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rest-detail {
+  background: var(--surface);
+  border-radius: var(--radius-lg, 20px);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.rest-detail[hidden],
+.rest-detail-empty[hidden] { display: none; }
+
+.rest-detail-cover { height: 180px; }
+
+.rest-cover-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--accent-soft);
+  font-size: 3rem;
+}
+
+.rest-detail-body { padding: 20px 22px 22px; }
+
+.rest-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rest-detail-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.rest-detail-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.rest-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rest-detail-actions .search-btn,
+.rest-detail-actions .outline-btn,
+.rest-detail-actions .cancel-btn { padding: 8px 14px; font-size: 0.88rem; }
+
+.rest-detail-desc {
+  margin: 12px 0 0;
+  color: var(--muted);
+}
+
+.rest-detail-desc:empty { display: none; }
+
+.rest-tables-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.rest-tables-head h3 { margin: 0; font-size: 1rem; }
+
+.rest-tables-head .booking-status { margin: 0; }
+
+.rest-detail-empty {
+  margin: 0;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: var(--radius-lg, 20px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Սեղանների քարտերը՝ ավելի փափուկ */
+.admin-page .admin-table-card {
+  border: none;
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: inset 4px 0 0 var(--free);
+  padding: 12px 14px;
+}
+
+.admin-page .admin-table-card.busy { box-shadow: inset 4px 0 0 var(--selected); }
+
+/* Ձևերի պատուհանները admin-ում */
+.admin-page .modal {
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-page .modal-overlay { backdrop-filter: blur(4px); }
+
+.admin-page .admin-box {
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 1100px) {
+  .rest-split { grid-template-columns: 1fr; }
+  .rest-list-wrap { max-height: 320px; }
+}
+
+@media (max-width: 900px) {
+  .admin-page .sidebar { top: auto; }
+  .admin-page .content-tabs { display: flex; }
+}
+
+/* Admin՝ ձախ վահանակը, ռեստորանների ցուցակը և ընտրված ռեստորանը ավարտվում են ներքևում նույն գծով.
+   Սյունակները ձգվում են ամենաերկար բովանդակության չափով (պատուհանի բարձրությամբ չեն սահմանափակվում) */
+@media (min-width: 1101px) {
+  .admin-page #panelView { align-items: stretch; }
+
+  .admin-page .sidebar {
+    position: static;
+    align-content: start;
+  }
+
+  .admin-page #panelView .content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-page #restaurantsTab:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .admin-page .rest-split {
+    flex: 1;
+    align-items: stretch;
+  }
+
+  .admin-page .rest-list-wrap { max-height: none; }
+}
+
+/* Admin՝ ռեստորանների ցուցակի վերևի փոքր սլաքով կոճակը («Բոլոր ռեստորանները ▾») */
+.rest-list-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.rest-list-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rest-list-toggle:hover { background: var(--bg); color: var(--text); }
+
+.rest-list-toggle[hidden] { display: none; }
+
+.rest-list-toggle[aria-expanded="true"] .my-chevron { transform: rotate(180deg); }
+
+.rest-list-scroll { overflow-y: auto; }
+
+/* Մեծ էկրանին ցուցակը էջը չի երկարացնում. այն ունի ռեստորանի քարտի բարձրությունը և թերթվում է ներսում */
+@media (min-width: 1101px) {
+  .admin-page .rest-list-wrap {
+    height: 0;
+    min-height: 100%;
+    overflow: hidden;
+  }
+
+  .admin-page .rest-list-scroll {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* Ցուցակի վերևում՝ որոնման դաշտը և նրա կողքին փոքր սլաքով կոճակը */
+.rest-list-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.rest-list-head .restaurant-search {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.rest-list-head .restaurant-search input {
+  padding: 9px 56px 9px 38px;
+  background-position: 12px center;
+  background-size: 16px;
+  font-size: 0.88rem;
+}
+
+.rest-list-head .restaurant-search-count {
+  right: 12px;
+  font-size: 0.75rem;
+}
+
+.rest-list-head .rest-list-toggle {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+/* Ռեստորանների ցուցակի թերթման շերտը՝ լայն, միշտ երևացող և էջի գույներով, որ հեշտ լինի քաշել վեր ու վար */
+.rest-list-scroll {
+  overflow-y: scroll;
+  scrollbar-width: auto;
+  scrollbar-color: var(--accent) var(--bg);
+  padding-right: 4px;
+}
+
+.rest-list-scroll::-webkit-scrollbar { width: 12px; }
+
+.rest-list-scroll::-webkit-scrollbar-track {
+  background: var(--bg);
+  border-radius: 999px;
+}
+
+.rest-list-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border: 3px solid var(--bg);
+  border-radius: 999px;
+}

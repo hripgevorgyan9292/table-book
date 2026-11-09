@@ -709,6 +709,8 @@ async function cancelBooking(booking, btn) {
 
 const restaurantGrid = document.getElementById("restaurantGrid");
 const restaurantsEmpty = document.getElementById("restaurantsEmpty");
+const restaurantsCity = document.getElementById("restaurantsCity");
+const bookCity = document.getElementById("bookCity");
 let restaurants = [];
 
 async function loadRestaurants() {
@@ -716,17 +718,38 @@ async function loadRestaurants() {
     const response = await fetch("/api/restaurants");
     if (!response.ok) return;
     restaurants = (await response.json()).restaurants;
+    fillCitySelects();
     renderRestaurants();
     fillRestaurantSelect();
   } catch (e) {}
 }
 
-// Ամրագրման ձևի «Restaurant» ցանկը՝ բազայի ռեստորաններից, ընտրվածը պահելով
+// Քաղաքների ցանկերը՝ ամեն քաղաքի կողքին այնտեղի ռեստորանների քանակով
+function fillCitySelects() {
+  const counts = {};
+  restaurants.forEach((r) => { counts[r.city] = (counts[r.city] || 0) + 1; });
+  fillCitySelect(restaurantsCity, { allLabel: true, counts });
+  fillCitySelect(bookCity, { allLabel: true, counts });
+}
+
+const inCity = (city) => (restaurant) => !city || restaurant.city === city;
+
+// Ռեստորանների բաժնում քաղաք ընտրելիս նույն քաղաքն ընտրվում է նաև ամրագրման ձևում
+restaurantsCity.addEventListener("change", () => {
+  renderRestaurants();
+  bookCity.value = restaurantsCity.value;
+  fillRestaurantSelect();
+});
+
+bookCity.addEventListener("change", fillRestaurantSelect);
+
+// Ամրագրման ձևի «Restaurant» ցանկը՝ ընտրված քաղաքի ռեստորաններից, ընտրվածը պահելով
 function fillRestaurantSelect() {
   const previous = bookRestaurant.value;
+  const list = restaurants.filter(inCity(bookCity.value));
   bookRestaurant.innerHTML = "";
-  restaurants.forEach((restaurant) => bookRestaurant.add(new Option(restaurant.name, restaurant.id)));
-  if (restaurants.some((restaurant) => String(restaurant.id) === previous)) bookRestaurant.value = previous;
+  list.forEach((restaurant) => bookRestaurant.add(new Option(restaurant.name, restaurant.id)));
+  if (list.some((restaurant) => String(restaurant.id) === previous)) bookRestaurant.value = previous;
 
   // Նոր ռեստորան է ընտրված (կամ անունը փոխվել է)՝ թարմացնել հատակագիծը
   const selectedName = bookRestaurant.selectedOptions[0] ? bookRestaurant.selectedOptions[0].textContent : "";
@@ -737,6 +760,10 @@ function fillRestaurantSelect() {
 
 // Քարտի «Book a table» կոճակը ընտրում է ռեստորանը և տանում ամրագրման բաժին
 function bookAtRestaurant(restaurant) {
+  if (bookCity.value && bookCity.value !== restaurant.city) {
+    bookCity.value = restaurant.city;
+    fillRestaurantSelect();
+  }
   bookRestaurant.value = restaurant.id;
   searchTables();
   document.getElementById("booking").scrollIntoView({ behavior: "smooth" });
@@ -744,9 +771,11 @@ function bookAtRestaurant(restaurant) {
 
 function renderRestaurants() {
   restaurantGrid.innerHTML = "";
-  restaurantsEmpty.hidden = restaurants.length > 0;
+  const list = restaurants.filter(inCity(restaurantsCity.value));
+  restaurantsEmpty.hidden = list.length > 0;
+  restaurantsEmpty.textContent = t(restaurants.length ? "noRestaurantsInCity" : "restaurantsEmpty");
 
-  restaurants.forEach((restaurant) => {
+  list.forEach((restaurant) => {
     const card = document.createElement("div");
     card.className = "card photo-card";
 
@@ -774,12 +803,7 @@ function renderRestaurants() {
     name.textContent = restaurant.name;
     card.appendChild(name);
 
-    if (restaurant.address) {
-      const address = document.createElement("p");
-      address.className = "restaurant-address";
-      address.textContent = "📍 " + restaurant.address;
-      card.appendChild(address);
-    }
+    card.appendChild(restaurantLocation(restaurant));
 
     if (restaurant.description) {
       const description = document.createElement("p");
@@ -816,6 +840,7 @@ function applyLanguage() {
 
   if (lastStatus) bookingStatus.textContent = lastStatus.text ?? t(lastStatus.key, lastStatus.vars);
   renderMyBookings();
+  fillCitySelects();
   renderRestaurants();
 
   // Վերագծել սխեման նոր լեզվով՝ պահելով ընտրված սեղանը

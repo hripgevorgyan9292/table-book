@@ -71,6 +71,7 @@ db.exec(`
     name        TEXT NOT NULL,
     cuisine     TEXT NOT NULL DEFAULT '',
     address     TEXT NOT NULL DEFAULT '',
+    city        TEXT NOT NULL DEFAULT 'yerevan',
     description TEXT NOT NULL DEFAULT '',
     image_url   TEXT NOT NULL DEFAULT '',
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
@@ -107,6 +108,19 @@ if (!userColumns.includes('role')) {
     UPDATE users SET role = 'admin' WHERE is_admin = 1;
   `);
 }
+
+// Restaurants created before cities existed are all in Yerevan
+const restaurantColumns = db.prepare('PRAGMA table_info(restaurants)').all().map((c) => c.name);
+if (!restaurantColumns.includes('city')) {
+  db.exec("ALTER TABLE restaurants ADD COLUMN city TEXT NOT NULL DEFAULT 'yerevan'");
+}
+
+// Cities of Armenia a restaurant can be in (the names are translated on the pages, see i18n.js)
+const CITIES = [
+  'yerevan', 'gyumri', 'vanadzor', 'vagharshapat', 'abovyan', 'hrazdan', 'kapan', 'armavir',
+  'artashat', 'ashtarak', 'gavar', 'goris', 'dilijan', 'ijevan', 'sevan', 'jermuk',
+  'tsaghkadzor', 'sisian', 'stepanavan', 'yeghegnadzor', 'alaverdi', 'masis', 'charentsavan', 'meghri',
+];
 
 // Add 10 restaurants on first run; after that the admin manages the list
 if (db.prepare('SELECT COUNT(*) AS n FROM restaurants').get().n === 0) {
@@ -179,7 +193,8 @@ function verifyPassword(password, stored) {
 }
 
 function sendJson(res, status, data, headers = {}) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...headers });
+  // API answers change all the time (bookings, restaurants), so the browser must not reuse old ones
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers });
   res.end(JSON.stringify(data));
 }
 
@@ -302,6 +317,11 @@ function readRestaurant(body, res) {
     sendJson(res, 400, { errors: { name: 'Գրեք ռեստորանի անվանումը' } });
     return null;
   }
+  data.city = asText(body.city);
+  if (!CITIES.includes(data.city)) {
+    sendJson(res, 400, { errors: { city: 'Ընտրեք քաղաքը' } });
+    return null;
+  }
   const tooLong = Object.keys(RESTAURANT_LIMITS).find((field) => data[field].length > RESTAURANT_LIMITS[field]);
   if (tooLong) {
     sendJson(res, 400, { errors: { [tooLong]: 'Տեքստը չափազանց երկար է' } });
@@ -325,7 +345,7 @@ const routes = {
 
   'GET /api/restaurants': (req, res) => {
     const restaurants = db.prepare(`
-      SELECT id, name, cuisine, address, description, image_url AS imageUrl
+      SELECT id, name, cuisine, address, city, description, image_url AS imageUrl
       FROM restaurants ORDER BY id
     `).all();
     sendJson(res, 200, { restaurants: restaurants.map((r) => ({ ...r })) });
@@ -337,8 +357,8 @@ const routes = {
     if (!data) return;
 
     const { lastInsertRowid } = db
-      .prepare('INSERT INTO restaurants (name, cuisine, address, description, image_url) VALUES (?, ?, ?, ?, ?)')
-      .run(data.name, data.cuisine, data.address, data.description, data.imageUrl);
+      .prepare('INSERT INTO restaurants (name, cuisine, address, city, description, image_url) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(data.name, data.cuisine, data.address, data.city, data.description, data.imageUrl);
     addDefaultTables(lastInsertRowid);
     sendJson(res, 201, { restaurant: { id: Number(lastInsertRowid), ...data } });
   },
@@ -353,8 +373,8 @@ const routes = {
     const data = readRestaurant(body, res);
     if (!data) return;
 
-    db.prepare('UPDATE restaurants SET name = ?, cuisine = ?, address = ?, description = ?, image_url = ? WHERE id = ?')
-      .run(data.name, data.cuisine, data.address, data.description, data.imageUrl, id);
+    db.prepare('UPDATE restaurants SET name = ?, cuisine = ?, address = ?, city = ?, description = ?, image_url = ? WHERE id = ?')
+      .run(data.name, data.cuisine, data.address, data.city, data.description, data.imageUrl, id);
     sendJson(res, 200, { restaurant: { id, ...data } });
   },
 

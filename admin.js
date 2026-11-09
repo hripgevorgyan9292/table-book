@@ -311,12 +311,26 @@ atDate.value = (() => {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 })();
 
-// Ռեստորանների ցանկը վերցվում է նույն ցուցակից, որը ադմինը կառավարում է ներքևում
+const atCity = document.getElementById("atCity");
+const rCity = document.getElementById("rCity");
+
+// Քաղաքների ցանկերը. սեղանների ձևում՝ ռեստորանների քանակով, ռեստորանի ձևում՝ առանց «Բոլոր քաղաքները»
+function fillCitySelects() {
+  const counts = {};
+  restaurants.forEach((r) => { counts[r.city] = (counts[r.city] || 0) + 1; });
+  fillCitySelect(atCity, { allLabel: true, counts });
+  fillCitySelect(rCity);
+}
+
+atCity.addEventListener("change", fillTablesRestaurantSelect);
+
+// Ռեստորանների ցանկը վերցվում է նույն ցուցակից, որը ադմինը կառավարում է ներքևում՝ ընտրված քաղաքի ռեստորանները
 function fillTablesRestaurantSelect() {
   const previous = atRestaurant.value;
+  const list = restaurants.filter((r) => !atCity.value || r.city === atCity.value);
   atRestaurant.innerHTML = "";
-  restaurants.forEach((restaurant) => atRestaurant.add(new Option(restaurant.name, restaurant.id)));
-  if (restaurants.some((restaurant) => String(restaurant.id) === previous)) atRestaurant.value = previous;
+  list.forEach((restaurant) => atRestaurant.add(new Option(restaurant.name, restaurant.id)));
+  if (list.some((restaurant) => String(restaurant.id) === previous)) atRestaurant.value = previous;
   loadAdminTables();
 }
 
@@ -388,7 +402,7 @@ const addRestaurantBtn = document.getElementById("addRestaurantBtn");
 const restaurantModal = document.getElementById("restaurantModal");
 const restaurantForm = document.getElementById("restaurantForm");
 const restaurantFormTitle = document.getElementById("restaurantFormTitle");
-const RESTAURANT_FIELDS = { name: "rName", cuisine: "rCuisine", address: "rAddress", description: "rDescription", imageUrl: "rImageUrl" };
+const RESTAURANT_FIELDS = { name: "rName", city: "rCity", cuisine: "rCuisine", address: "rAddress", description: "rDescription", imageUrl: "rImageUrl" };
 let restaurants = [];
 let editingRestaurant = null;
 
@@ -397,6 +411,7 @@ async function loadRestaurants() {
     const response = await fetch("/api/restaurants");
     if (!response.ok) return;
     restaurants = (await response.json()).restaurants;
+    fillCitySelects();
     renderRestaurants();
     fillTablesRestaurantSelect();
   } catch (e) {}
@@ -434,12 +449,7 @@ function renderRestaurants() {
     name.textContent = restaurant.name;
     card.appendChild(name);
 
-    if (restaurant.address) {
-      const address = document.createElement("p");
-      address.className = "restaurant-address";
-      address.textContent = "📍 " + restaurant.address;
-      card.appendChild(address);
-    }
+    card.appendChild(restaurantLocation(restaurant));
 
     const actions = document.createElement("div");
     actions.className = "admin-actions";
@@ -449,6 +459,10 @@ function renderRestaurants() {
     tablesBtn.className = "search-btn";
     tablesBtn.textContent = t("tablesBtn");
     tablesBtn.addEventListener("click", () => {
+      if (atCity.value && atCity.value !== restaurant.city) {
+        atCity.value = restaurant.city;
+        fillTablesRestaurantSelect();
+      }
       atRestaurant.value = restaurant.id;
       loadAdminTables();
       document.getElementById("adminTables").scrollIntoView({ behavior: "smooth" });
@@ -492,6 +506,8 @@ function openRestaurantForm(restaurant) {
     restaurantForm.elements[field].value = restaurant ? restaurant[field] : "";
     showError(id, "");
   });
+  // Նոր ռեստորանի քաղաքը՝ սեղանների ձևում ընտրվածը, կամ Երևան
+  if (!restaurant) rCity.value = atCity.value || "yerevan";
   restaurantModal.hidden = false;
   restaurantForm.elements.name.focus();
 }
@@ -557,6 +573,7 @@ function applyLanguage() {
   renderUser();
   renderAdminBookings();
   renderAdminTables();
+  fillCitySelects();
   renderRestaurants();
   renderRejectTemplates();
   restaurantFormTitle.textContent = t(editingRestaurant ? "restaurantFormEdit" : "restaurantFormAdd");

@@ -204,6 +204,10 @@ const TRANSLATIONS = {
     restaurantDeleted: "Ռեստորանը ջնջվեց։",
     deleteConfirm: "Ջնջե՞լ «{name}» ռեստորանը։",
     errName: "Գրեք ռեստորանի անվանումը",
+    labelCity: "Քաղաք",
+    allCities: "Բոլոր քաղաքները",
+    noRestaurantsInCity: "Այս քաղաքում դեռ ռեստորաններ չկան։",
+    errCity: "Ընտրեք քաղաքը",
     errImage: "Լուսանկարի հղումը պետք է սկսվի https://-ով",
     errTooLong: "Տեքստը չափազանց երկար է",
     errAdminOnly: "Միայն ադմինը կարող է փոխել ռեստորանները",
@@ -438,6 +442,10 @@ const TRANSLATIONS = {
     restaurantDeleted: "Ресторан удалён.",
     deleteConfirm: "Удалить ресторан «{name}»?",
     errName: "Введите название ресторана",
+    labelCity: "Город",
+    allCities: "Все города",
+    noRestaurantsInCity: "В этом городе пока нет ресторанов.",
+    errCity: "Выберите город",
     errImage: "Ссылка на фото должна начинаться с https://",
     errTooLong: "Текст слишком длинный",
     errAdminOnly: "Только администратор может изменять рестораны",
@@ -671,6 +679,10 @@ const TRANSLATIONS = {
     restaurantDeleted: "Restaurant deleted.",
     deleteConfirm: "Delete the restaurant “{name}”?",
     errName: "Enter the restaurant name",
+    labelCity: "City",
+    allCities: "All cities",
+    noRestaurantsInCity: "No restaurants in this city yet.",
+    errCity: "Choose a city",
     errImage: "The photo link must start with https://",
     errTooLong: "The text is too long",
     errAdminOnly: "Only the admin can change restaurants",
@@ -718,6 +730,63 @@ const TRANSLATIONS = {
   },
 };
 
+// Հայաստանի քաղաքները. բանալին պահվում է բազայում, անունը ցույց է տրվում ընտրված լեզվով
+const CITIES = [
+  ["yerevan", "Երևան", "Ереван", "Yerevan"],
+  ["gyumri", "Գյումրի", "Гюмри", "Gyumri"],
+  ["vanadzor", "Վանաձոր", "Ванадзор", "Vanadzor"],
+  ["vagharshapat", "Վաղարշապատ (Էջմիածին)", "Вагаршапат (Эчмиадзин)", "Vagharshapat (Etchmiadzin)"],
+  ["abovyan", "Աբովյան", "Абовян", "Abovyan"],
+  ["hrazdan", "Հրազդան", "Раздан", "Hrazdan"],
+  ["kapan", "Կապան", "Капан", "Kapan"],
+  ["armavir", "Արմավիր", "Армавир", "Armavir"],
+  ["artashat", "Արտաշատ", "Арташат", "Artashat"],
+  ["ashtarak", "Աշտարակ", "Аштарак", "Ashtarak"],
+  ["gavar", "Գավառ", "Гавар", "Gavar"],
+  ["goris", "Գորիս", "Горис", "Goris"],
+  ["dilijan", "Դիլիջան", "Дилижан", "Dilijan"],
+  ["ijevan", "Իջևան", "Иджеван", "Ijevan"],
+  ["sevan", "Սևան", "Севан", "Sevan"],
+  ["jermuk", "Ջերմուկ", "Джермук", "Jermuk"],
+  ["tsaghkadzor", "Ծաղկաձոր", "Цахкадзор", "Tsaghkadzor"],
+  ["sisian", "Սիսիան", "Сисиан", "Sisian"],
+  ["stepanavan", "Ստեփանավան", "Степанаван", "Stepanavan"],
+  ["yeghegnadzor", "Եղեգնաձոր", "Ехегнадзор", "Yeghegnadzor"],
+  ["alaverdi", "Ալավերդի", "Алаверди", "Alaverdi"],
+  ["masis", "Մասիս", "Масис", "Masis"],
+  ["charentsavan", "Չարենցավան", "Чаренцаван", "Charentsavan"],
+  ["meghri", "Մեղրի", "Мегри", "Meghri"],
+].map(([key, hy, ru, en]) => ({ key, names: { hy, ru, en } }));
+
+function cityName(key) {
+  const city = CITIES.find((c) => c.key === key);
+  return city ? city.names[currentLang] || city.names.en : key;
+}
+
+// Ռեստորանի քարտի տեղակայման տողը՝ «📍 Քաղաք · հասցե»
+function restaurantLocation(restaurant) {
+  const line = document.createElement("p");
+  line.className = "restaurant-address";
+  const city = document.createElement("strong");
+  city.textContent = cityName(restaurant.city);
+  line.append("📍 ", city);
+  if (restaurant.address) line.append(" · " + restaurant.address);
+  return line;
+}
+
+// Լցնում է քաղաքների ցանկը. allLabel-ով առաջինը «Բոլոր քաղաքները» տարբերակն է (դատարկ արժեքով)։
+// counts-ով քաղաքի կողքին գրվում է, քանի ռեստորան կա այնտեղ
+function fillCitySelect(select, { allLabel = false, counts = null } = {}) {
+  const previous = select.value;
+  select.innerHTML = "";
+  if (allLabel) select.add(new Option(t("allCities"), ""));
+  CITIES.forEach((city) => {
+    const n = counts ? counts[city.key] || 0 : null;
+    select.add(new Option(cityName(city.key) + (n ? " (" + n + ")" : ""), city.key));
+  });
+  if ([...select.options].some((o) => o.value === previous)) select.value = previous;
+}
+
 const LANGUAGES = ["en", "hy", "ru"];
 let currentLang = "en";
 
@@ -749,6 +818,7 @@ const SERVER_MESSAGES = {
   "Ամրագրումը կարելի է չեղարկել առնվազն 1 ժամ առաջ": "errCancelTooLate",
   "Ամրագրումը պետք է ավարտվի մինչև 23:00": "errClosing",
   "Գրեք ռեստորանի անվանումը": "errName",
+  "Ընտրեք քաղաքը": "errCity",
   "Լուսանկարի հղումը պետք է սկսվի https://-ով": "errImage",
   "Տեքստը չափազանց երկար է": "errTooLong",
   "Միայն ադմինը կարող է փոխել ռեստորանները": "errAdminOnly",

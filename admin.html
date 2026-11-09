@@ -74,6 +74,10 @@
           <h3 data-i18n="adminTablesTitle">Free and busy tables</h3>
           <form class="booking-search admin-tables-search" id="adminTablesForm" novalidate>
             <div class="field">
+              <label for="atCity" data-i18n="labelCity">City</label>
+              <select id="atCity" name="city"></select>
+            </div>
+            <div class="field">
               <label for="atRestaurant" data-i18n="labelRestaurant">Restaurant</label>
               <select id="atRestaurant" name="restaurant"></select>
             </div>
@@ -107,6 +111,11 @@
           <label for="rName" data-i18n="labelName">Name</label>
           <input type="text" id="rName" name="name" maxlength="80">
           <small class="error-msg" id="rNameError"></small>
+        </div>
+        <div class="field">
+          <label for="rCity" data-i18n="labelCity">City</label>
+          <select id="rCity" name="city"></select>
+          <small class="error-msg" id="rCityError"></small>
         </div>
         <div class="form-row">
           <div class="field">

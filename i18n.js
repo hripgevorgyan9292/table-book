@@ -20,7 +20,6 @@ const TRANSLATIONS = {
   hy: {
     pageTitle: "Table Book — սեղանների ամրագրում",
     langAria: "Լեզու",
-    navWho: "Ո՞ւմ համար է",
     navHow: "Քայլեր",
     navFeatures: "Հնարավորություններ",
     themeDark: "Մուգ",
@@ -54,17 +53,6 @@ const TRANSLATIONS = {
     factGuests: "Հյուրեր",
     bookNow: "Ամրագրել",
 
-    whoTitle: "Ո՞ւմ համար է",
-    whoLead: "Ծրագիրը նախատեսված է փոքր հաստատությունների համար, որոնք չունեն բարդ համակարգերի կարիք։",
-    who1Title: "Փոքր սրճարաններ",
-    who1Text: "Մի քանի սեղան ունեցող հաստատություններ, որոնք ուզում են խուսափել հեռախոսային ամրագրումների շփոթից։",
-    who1Alt: "Ռեստորանի սրահ՝ բորդո թավշյա բազկաթոռներով",
-    who2Title: "Սեփականատերեր",
-    who2Text: "Նրանք, ովքեր ուզում են մեկ էկրանում տեսնել օրվա բոլոր ամրագրումները։",
-    who2Alt: "Դասական ձևավորված սրահ՝ տաք լույսերով",
-    who3Title: "Հյուրեր",
-    who3Text: "Մարդիկ, ովքեր ուզում են արագ ամրագրել սեղան առանց զանգելու։",
-    who3Alt: "Նրբագեղ սրահ՝ կարմիր աթոռներով և դեկորատիվ լույսերով",
 
     howTitle: "Քայլեր",
     howLead: "Ամրագրումը տևում է ընդամենը մի քանի քայլ։",
@@ -257,7 +245,6 @@ const TRANSLATIONS = {
   ru: {
     pageTitle: "Table Book — бронирование столиков",
     langAria: "Язык",
-    navWho: "Для кого",
     navHow: "Шаги",
     navFeatures: "Возможности",
     themeDark: "Тёмная",
@@ -291,17 +278,6 @@ const TRANSLATIONS = {
     factGuests: "Гости",
     bookNow: "Забронировать",
 
-    whoTitle: "Для кого",
-    whoLead: "Система создана для небольших заведений, которым не нужны сложные программы.",
-    who1Title: "Небольшие кафе",
-    who1Text: "Заведения с несколькими столиками, которые хотят избежать путаницы с бронированием по телефону.",
-    who1Alt: "Зал ресторана с бордовыми бархатными креслами",
-    who2Title: "Владельцы",
-    who2Text: "Те, кто хочет видеть все бронирования дня на одном экране.",
-    who2Alt: "Классический зал с тёплым светом",
-    who3Title: "Гости",
-    who3Text: "Люди, которые хотят быстро забронировать столик без звонка.",
-    who3Alt: "Элегантный зал с красными стульями и декоративными светильниками",
 
     howTitle: "Шаги",
     howLead: "Бронирование занимает всего несколько шагов.",
@@ -495,7 +471,6 @@ const TRANSLATIONS = {
   en: {
     pageTitle: "Table Book — table booking",
     langAria: "Language",
-    navWho: "Who it's for",
     navHow: "Steps",
     navFeatures: "Features",
     themeDark: "Dark",
@@ -529,17 +504,6 @@ const TRANSLATIONS = {
     factGuests: "Guests",
     bookNow: "Book",
 
-    whoTitle: "Who it's for",
-    whoLead: "Made for small venues that don't need complicated systems.",
-    who1Title: "Small cafés",
-    who1Text: "Places with a few tables that want to avoid the mess of phone bookings.",
-    who1Alt: "Restaurant hall with burgundy velvet armchairs",
-    who2Title: "Owners",
-    who2Text: "People who want to see all of the day's bookings on one screen.",
-    who2Alt: "Classic hall with warm lighting",
-    who3Title: "Guests",
-    who3Text: "People who want to book a table quickly without calling.",
-    who3Alt: "Elegant hall with red chairs and decorative lights",
 
     howTitle: "Steps",
     howLead: "Booking takes just a few steps.",

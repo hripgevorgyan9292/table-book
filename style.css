@@ -207,9 +207,6 @@ section h2 {
   margin: 0 0 8px;
 }
 
-/* «Հնարավորություններ» բաժինը նկարագրություն չունի, քարտերը գալիս են անմիջապես վերնագրից հետո */
-#features h2 { margin-bottom: 24px; }
-
 .section-lead {
   color: var(--muted);
   margin: 0 0 28px;
@@ -284,6 +281,103 @@ section h2 {
   margin: 0;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+/* ---------- «Քայլեր» և «Հնարավորություններ»՝ կոմպակտ տեսք ---------- */
+
+#how,
+#features { padding: 36px 0; }
+
+#how .section-lead { margin-bottom: 20px; }
+
+/* Քայլերը՝ մեկ շարքով, իրար միացված գծով */
+#how .steps {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+#how .steps li {
+  position: relative;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  transition: border-color 0.15s;
+}
+
+#how .steps li:hover,
+#features .card:hover { border-color: var(--accent); }
+
+#how .steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 31px;
+  right: -15px;
+  width: 16px;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+#how .step-num {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.9rem;
+}
+
+#how .steps h3,
+#features .card h3 {
+  margin: 0 0 3px;
+  font-size: 0.98rem;
+}
+
+#how .steps p,
+#features .card p {
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* Հնարավորությունները՝ փոքր քարտեր, պատկերակը ձախից */
+#features h2 { margin-bottom: 20px; }
+
+#features .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#features .card {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  column-gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  transition: border-color 0.15s;
+}
+
+#features .icon {
+  grid-row: span 2;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+@media (max-width: 900px) {
+  #how .steps,
+  #features .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #how .steps li::after { display: none; }
+}
+
+@media (max-width: 560px) {
+  #how .steps,
+  #features .grid { grid-template-columns: 1fr; }
+  #how .steps li { flex-direction: row; }
 }
 
 .modal-overlay {

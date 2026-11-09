@@ -76,9 +76,10 @@ db.exec(`
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  -- A table can have only one active reservation per time slot
-  CREATE UNIQUE INDEX IF NOT EXISTS reservations_slot
-    ON reservations (table_id, date, time) WHERE status != 'cancelled';
+  -- Guests may send several requests for the same slot; only one of them can be confirmed
+  DROP INDEX IF EXISTS reservations_slot;
+  CREATE UNIQUE INDEX IF NOT EXISTS reservations_confirmed_slot
+    ON reservations (table_id, date, time) WHERE status = 'confirmed';
 `);
 
 // Databases created before bookings had a length get the column added (existing bookings become 1 hour)
@@ -250,11 +251,12 @@ function toMinutes(time) {
   return h * 60 + m;
 }
 
-// True if the table already has an active booking that overlaps [start, start + duration)
+// True if the table already has a confirmed booking that overlaps [start, start + duration).
+// Pending bookings do not hold the table until the admin confirms them.
 function isTableBusy(tableId, date, start, duration, ignoreId = 0) {
   return db.prepare(`
     SELECT time, duration FROM reservations
-    WHERE table_id = ? AND date = ? AND status != 'cancelled' AND id != ?
+    WHERE table_id = ? AND date = ? AND status = 'confirmed' AND id != ?
   `).all(tableId, date, ignoreId).some((r) => {
     const otherStart = toMinutes(r.time);
     return start < otherStart + r.duration && otherStart < start + duration;
@@ -519,7 +521,9 @@ const routes = {
             return start < otherStart + r.duration && otherStart < start + BOOKING_MINUTES;
           });
         }
-        return { ...t, free: bookings.length === 0, bookings: bookings.map((r) => ({ ...r })) };
+        // Only confirmed bookings make the table busy; pending ones are still listed for the admin
+        const free = !bookings.some((r) => r.status === 'confirmed');
+        return { ...t, free, bookings: bookings.map((r) => ({ ...r })) };
       }),
     });
   },
@@ -527,11 +531,15 @@ const routes = {
   'POST /api/admin/reservations/confirm': async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const id = Number((await readJson(req)).id);
-    const reservation = Number.isInteger(id) && db.prepare('SELECT status FROM reservations WHERE id = ?').get(id);
+    const reservation = Number.isInteger(id) && db.prepare('SELECT * FROM reservations WHERE id = ?').get(id);
 
     if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
     if (reservation.status === 'cancelled') {
       return sendJson(res, 400, { error: 'Չեղարկված ամրագրումը հնարավոր չէ հաստատել' });
+    }
+    // Another guest's booking for the same table and hour may already be confirmed
+    if (isTableBusy(reservation.table_id, reservation.date, toMinutes(reservation.time), reservation.duration, id)) {
+      return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
     }
 
     db.prepare("UPDATE reservations SET status = 'confirmed' WHERE id = ?").run(id);

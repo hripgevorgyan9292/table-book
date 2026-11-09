@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "make-admin": "node make-admin.js",
-    "seed": "node seeders/super-admin.js"
+    "seed": "node seeders/super-admin.js",
+    "seed:restaurants": "node seeders/restaurants.js"
   },
   "engines": {
     "node": ">=22.13"

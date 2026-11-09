@@ -201,19 +201,31 @@ function readJson(req) {
   });
 }
 
-function startSession(userId) {
+// The main page and the admin page keep separate cookies, so a guest and an admin
+// can be signed in at the same time in one browser without logging each other out
+const USER_COOKIE = 'session';
+const ADMIN_COOKIE = 'admin_session';
+
+function startSession(userId, cookie = USER_COOKIE) {
   const token = crypto.randomBytes(32).toString('hex');
   db.prepare('INSERT INTO sessions (token, user_id) VALUES (?, ?)').run(token, userId);
-  return `session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 24 * 60 * 60}`;
+  return `${cookie}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 24 * 60 * 60}`;
 }
 
-function getSessionToken(req) {
-  const match = /(?:^|;\s*)session=([a-f0-9]+)/.exec(req.headers.cookie || '');
+// Deletes the session behind the cookie and returns the header that clears it
+function endSession(req, cookie) {
+  const token = getSessionToken(req, cookie);
+  if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  return `${cookie}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`;
+}
+
+function getSessionToken(req, cookie = USER_COOKIE) {
+  const match = new RegExp(`(?:^|;\\s*)${cookie}=([a-f0-9]+)`).exec(req.headers.cookie || '');
   return match ? match[1] : null;
 }
 
-function getSessionUser(req) {
-  const token = getSessionToken(req);
+function getSessionUser(req, cookie = USER_COOKIE) {
+  const token = getSessionToken(req, cookie);
   if (!token) return null;
   const user = db.prepare(`
     SELECT u.id, u.first_name AS firstName, u.last_name AS lastName, u.email, u.role
@@ -264,8 +276,9 @@ function isTableBusy(tableId, date, start, duration, ignoreId = 0) {
 }
 
 // Sends 403 and returns false unless the signed-in user has the 'admin' role
+// (only the admin page's own login counts, not the main page's Log in)
 function requireAdmin(req, res, message = 'Մուտքն արգելված է') {
-  const user = getSessionUser(req);
+  const user = getSessionUser(req, ADMIN_COOKIE);
   if (user && user.role === 'admin') return true;
   sendJson(res, 403, { error: message });
   return false;
@@ -415,14 +428,21 @@ const routes = {
     sendJson(
       res, 200,
       { user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: true } },
-      { 'Set-Cookie': startSession(user.id) }
+      { 'Set-Cookie': startSession(user.id, ADMIN_COOKIE) }
     );
   },
 
+  // Who is signed in on the admin page (independent of the main page's login)
+  'GET /api/admin/me': (req, res) => {
+    sendJson(res, 200, { user: getSessionUser(req, ADMIN_COOKIE) });
+  },
+
+  'POST /api/admin/logout': (req, res) => {
+    sendJson(res, 200, { ok: true }, { 'Set-Cookie': endSession(req, ADMIN_COOKIE) });
+  },
+
   'POST /api/logout': (req, res) => {
-    const token = getSessionToken(req);
-    if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
-    sendJson(res, 200, { ok: true }, { 'Set-Cookie': 'session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' });
+    sendJson(res, 200, { ok: true }, { 'Set-Cookie': endSession(req, USER_COOKIE) });
   },
 
   // A restaurant's tables with their availability for a given date and time

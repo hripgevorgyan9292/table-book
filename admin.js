@@ -93,7 +93,7 @@ loginForm.addEventListener("submit", async (event) => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
-    await fetch("/api/logout", { method: "POST" });
+    await fetch("/api/admin/logout", { method: "POST" });
   } catch (e) {}
   showView(null);
 });
@@ -482,7 +482,7 @@ langSelect.addEventListener("change", () => {
 applyLanguage();
 
 // Էջը բացելիս ստուգել՝ արդյոք արդեն մուտք է գործած
-fetch("/api/me")
+fetch("/api/admin/me")
   .then((response) => response.json())
   .then((result) => showView(result.user))
   .catch(() => showView(null));

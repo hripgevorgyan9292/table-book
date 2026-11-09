@@ -108,7 +108,6 @@ const TRANSLATIONS = {
     signupLink: "Գրանցվել",
 
     footerText: "TableBook · Սեղանների ամրագրում փոքր սրճարանների համար",
-    photosBy: "Լուսանկարները՝",
 
     errFirstName: "Գրեք ձեր անունը",
     errLastName: "Գրեք ձեր ազգանունը",
@@ -319,7 +318,6 @@ const TRANSLATIONS = {
     signupLink: "Зарегистрироваться",
 
     footerText: "TableBook · Бронирование столиков для небольших кафе",
-    photosBy: "Фото:",
 
     errFirstName: "Введите имя",
     errLastName: "Введите фамилию",
@@ -531,7 +529,6 @@ const TRANSLATIONS = {
     signupLink: "Sign up",
 
     footerText: "TableBook · Table booking for small cafés",
-    photosBy: "Photos:",
 
     errFirstName: "Enter your first name",
     errLastName: "Enter your last name",

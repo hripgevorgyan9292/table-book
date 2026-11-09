@@ -512,14 +512,6 @@ section h2 {
 .photo-card h3,
 .photo-card p { padding: 0 20px; }
 
-.photo-credit {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.8rem;
-}
-
-.photo-credit a { color: var(--muted); }
-
 /* ---------- Սրահի սխեմա ---------- */
 
 .booking-layout {

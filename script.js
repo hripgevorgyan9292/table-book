@@ -32,7 +32,9 @@ function openModal(modal) {
   else lastFocused = document.activeElement;
   openedModal = modal;
   modal.hidden = false;
-  modal.querySelector("input").focus();
+  // Ճաշացանկի պատուհանում դաշտեր չկան. այնտեղ ֆոկուսը գնում է առաջին կոճակին
+  const first = modal.querySelector("input") || modal.querySelector("button");
+  if (first) first.focus();
 }
 
 function closeModal() {
@@ -55,7 +57,7 @@ document.querySelectorAll("[data-open]").forEach((btn) => {
 });
 
 // Փակել, երբ սեղմում են պատուհանից դուրս՝ մուգ ֆոնի վրա
-[signupModal, loginModal].forEach((modal) => {
+[signupModal, loginModal, document.getElementById("menuModal")].forEach((modal) => {
   modal.addEventListener("click", (event) => {
     if (event.target === modal) closeModal();
   });
@@ -440,6 +442,7 @@ function selectTable(btn, table, place) {
   document.getElementById("panelDate").textContent = formatDate(lastSearch.date);
   document.getElementById("panelTime").textContent = timeRange(lastSearch.time);
   document.getElementById("panelGuests").textContent = lastSearch.guests;
+  renderOrderPanel();
   panelEmpty.hidden = true;
   panelDetails.hidden = false;
 }
@@ -518,6 +521,8 @@ bookBtn.addEventListener("click", async () => {
         time: lastSearch.time,
         guests: lastSearch.guests,
         tableId: selectedTable.id,
+        // Ուտեստները, որոնք հյուրն ընտրել է այս ռեստորանի ճաշացանկից
+        order: cartLines(lastSearch.restaurantId).map((line) => ({ id: line.id, qty: line.qty })),
       }),
     });
     const result = await response.json();
@@ -537,6 +542,9 @@ bookBtn.addEventListener("click", async () => {
     showToast(t("booked", {
       restaurant: r.restaurantName, n: r.tableNumber, date: formatDate(r.date), time: timeRange(r.time, r.duration),
     }));
+    // Պատվերն ուղարկվեց ամրագրման հետ, զամբյուղը դատարկվում է
+    delete carts[lastSearch.restaurantId];
+    renderOrderPanel();
     searchTables();
     loadMyBookings();
   } catch (e) {
@@ -666,7 +674,10 @@ function renderMyBookings() {
     }
     message.append(icon, text);
 
-    item.append(top, details, message);
+    item.append(top, details);
+    const order = orderLine(booking.order, "p");
+    if (order) item.appendChild(order);
+    item.appendChild(message);
 
     const isPast = new Date(booking.date + "T" + booking.time) < new Date();
     if (booking.canCancel) {
@@ -839,7 +850,12 @@ function renderRestaurants() {
     bookTableBtn.className = "search-btn";
     bookTableBtn.textContent = t("bookTableBtn");
     bookTableBtn.addEventListener("click", () => bookAtRestaurant(restaurant));
-    actions.appendChild(bookTableBtn);
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "outline-btn";
+    menuBtn.textContent = t("menuBtn");
+    menuBtn.addEventListener("click", () => openMenu(restaurant));
+    actions.append(bookTableBtn, menuBtn);
 
     card.appendChild(actions);
 
@@ -848,6 +864,181 @@ function renderRestaurants() {
 }
 
 loadRestaurants();
+
+// ---------- Ճաշացանկ ----------
+
+const menuModal = document.getElementById("menuModal");
+const menuTitle = document.getElementById("menuTitle");
+const menuMeta = document.getElementById("menuMeta");
+const menuTabs = document.getElementById("menuTabs");
+const menuList = document.getElementById("menuList");
+const menuEmpty = document.getElementById("menuEmpty");
+const menuOrderBar = document.getElementById("menuOrderBar");
+const menuOrderSummary = document.getElementById("menuOrderSummary");
+const menuOrderList = document.getElementById("menuOrderList");
+const menuBookBtn = document.getElementById("menuBookBtn");
+let menuState = null;
+
+// Ընտրված ուտեստները՝ ամեն ռեստորանի համար առանձին. { restaurantId: { dishId: { id, name, price, qty } } }
+const carts = {};
+const MAX_DISH_QTY = 20;
+
+function cartLines(restaurantId) {
+  return Object.values(carts[restaurantId] || {});
+}
+
+function cartTotal(lines) {
+  return lines.reduce((sum, line) => sum + line.price * line.qty, 0);
+}
+
+function setDishQty(restaurantId, dish, qty) {
+  const cart = (carts[restaurantId] ||= {});
+  if (qty <= 0) delete cart[dish.id];
+  else cart[dish.id] = { id: dish.id, name: dish.name, price: dish.price, qty: Math.min(qty, MAX_DISH_QTY) };
+  renderMenu();
+  renderOrderPanel();
+}
+
+// «−  2  +» կոճակները ճաշացանկի ամեն ուտեստի կողքին
+function dishQtyControl(restaurantId, dish) {
+  const qty = (carts[restaurantId] || {})[dish.id]?.qty || 0;
+  const control = document.createElement("div");
+  control.className = "dish-qty" + (qty ? " has-qty" : "");
+  const button = (label, aria, delta) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "dish-qty-btn";
+    btn.textContent = label;
+    btn.setAttribute("aria-label", t(aria, { name: dish.name }));
+    btn.disabled = qty + delta > MAX_DISH_QTY;
+    btn.addEventListener("click", () => setDishQty(restaurantId, dish, qty + delta));
+    return btn;
+  };
+  if (qty) {
+    const count = document.createElement("span");
+    count.className = "dish-qty-count";
+    count.textContent = qty;
+    control.append(button("−", "dishLess", -1), count, button("+", "dishMore", 1));
+  } else {
+    const add = button("+ " + t("dishAdd"), "dishMore", 1);
+    add.classList.add("dish-add-btn");
+    control.appendChild(add);
+  }
+  return control;
+}
+
+// Ամրագրման վահանակում՝ այն ռեստորանի պատվերը, որը ընտրված է ձևում
+const panelOrderList = document.getElementById("panelOrderList");
+const panelOrderTotal = document.getElementById("panelOrderTotal");
+const panelOrderEdit = document.getElementById("panelOrderEdit");
+
+function renderOrderPanel() {
+  const lines = cartLines(Number(bookRestaurant.value));
+  panelOrderList.innerHTML = "";
+  lines.forEach((line) => {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    name.textContent = line.name + " × " + line.qty;
+    const price = document.createElement("span");
+    price.textContent = formatPrice(line.price * line.qty);
+    item.append(name, price);
+    panelOrderList.appendChild(item);
+  });
+  panelOrderTotal.hidden = lines.length === 0;
+  panelOrderTotal.textContent = t("orderTotal", { total: formatPrice(cartTotal(lines)) });
+  panelOrderEdit.textContent = t(lines.length ? "orderChange" : "orderAdd");
+}
+
+panelOrderEdit.addEventListener("click", () => {
+  const restaurant = restaurants.find((r) => r.id === Number(bookRestaurant.value));
+  if (restaurant) openMenu(restaurant);
+});
+
+bookRestaurant.addEventListener("change", renderOrderPanel);
+
+async function openMenu(restaurant) {
+  try {
+    const response = await fetch("/api/menu?restaurantId=" + restaurant.id);
+    const result = await response.json();
+    if (!response.ok) return showToast(translateServer(result.error));
+    menuState = { restaurant, items: result.items, categories: result.categories, category: "" };
+    renderMenu();
+    openModal(menuModal);
+  } catch (e) {
+    showToast(t("networkError"));
+  }
+}
+
+function renderMenu() {
+  if (!menuState) return;
+  const { restaurant, items, categories } = menuState;
+  menuTitle.textContent = restaurant.name;
+  menuMeta.textContent = [restaurant.cuisine, cityName(restaurant.city)].filter(Boolean).join(" · ");
+
+  // Բաժինների կոճակներ՝ «Բոլորը» և միայն այն բաժինները, որտեղ ուտեստ կա
+  menuTabs.innerHTML = "";
+  ["", ...categories.filter((key) => items.some((item) => item.category === key))].forEach((key) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "menu-tab" + (key === menuState.category ? " active" : "");
+    tab.textContent = key ? t("menuCat_" + key) : t("menuAll");
+    tab.addEventListener("click", () => {
+      menuState.category = key;
+      renderMenu();
+    });
+    menuTabs.appendChild(tab);
+  });
+  menuTabs.hidden = items.length === 0;
+  menuEmpty.hidden = items.length > 0;
+  renderMenuList(menuList, items, categories, {
+    category: menuState.category,
+    decorate: (row, dish) => {
+      if ((carts[restaurant.id] || {})[dish.id]) row.classList.add("chosen");
+      row.appendChild(dishQtyControl(restaurant.id, dish));
+    },
+  });
+
+  // Ներքևում՝ ինչ է ընտրված, ամեն տողի գինը, ընդհանուր գինը և «×»՝ տողը հանելու համար
+  const lines = cartLines(restaurant.id);
+  const count = lines.reduce((sum, line) => sum + line.qty, 0);
+  menuOrderBar.hidden = count === 0;
+  menuOrderList.innerHTML = "";
+  lines.forEach((line) => {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    name.className = "menu-order-name";
+    name.textContent = line.name + " × " + line.qty;
+    const unit = document.createElement("span");
+    unit.className = "menu-order-unit";
+    unit.textContent = formatPrice(line.price);
+    const sum = document.createElement("span");
+    sum.className = "menu-order-sum";
+    sum.textContent = formatPrice(line.price * line.qty);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "menu-order-remove";
+    remove.textContent = "×";
+    remove.setAttribute("aria-label", t("orderRemove", { name: line.name }));
+    remove.addEventListener("click", () => setDishQty(restaurant.id, line, 0));
+    item.append(name, unit, sum, remove);
+    menuOrderList.appendChild(item);
+  });
+  menuOrderSummary.textContent = t("orderSummary", { n: count, total: formatPrice(cartTotal(lines)) });
+  menuBookBtn.textContent = t(count ? "bookWithOrder" : "bookTableBtn");
+}
+
+document.getElementById("menuOrderClear").addEventListener("click", () => {
+  delete carts[menuState.restaurant.id];
+  renderMenu();
+  renderOrderPanel();
+});
+
+menuBookBtn.addEventListener("click", () => {
+  const restaurant = menuState.restaurant;
+  closeModal();
+  bookAtRestaurant(restaurant);
+  renderOrderPanel();
+});
 
 // ---------- Լեզվի ընտրություն ----------
 
@@ -863,6 +1054,8 @@ function applyLanguage() {
   renderMyBookings();
   fillCitySelects();
   renderRestaurants();
+  renderMenu();
+  renderOrderPanel();
 
   // Վերագծել սխեման նոր լեզվով՝ պահելով ընտրված սեղանը
   if (lastTables && lastSearch) {

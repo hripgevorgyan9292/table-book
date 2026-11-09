@@ -83,6 +83,29 @@ db.exec(`
   DROP INDEX IF EXISTS reservations_slot;
   CREATE UNIQUE INDEX IF NOT EXISTS reservations_confirmed_slot
     ON reservations (table_id, date, time) WHERE status = 'confirmed';
+
+  -- A restaurant's menu: dishes by category, prices in Armenian drams; removed with the restaurant
+  CREATE TABLE IF NOT EXISTS menu_items (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    category      TEXT NOT NULL,
+    name          TEXT NOT NULL,
+    description   TEXT NOT NULL DEFAULT '',
+    price         INTEGER NOT NULL,
+    image_url     TEXT NOT NULL DEFAULT ''
+  );
+  CREATE INDEX IF NOT EXISTS menu_items_restaurant ON menu_items (restaurant_id);
+
+  -- Dishes the guest ordered with a booking. Name and price are copied, so later menu changes
+  -- don't change an order that was already made
+  CREATE TABLE IF NOT EXISTS reservation_items (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    reservation_id INTEGER NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    name           TEXT NOT NULL,
+    price          INTEGER NOT NULL,
+    qty            INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS reservation_items_reservation ON reservation_items (reservation_id);
 `);
 
 // Databases created before bookings had a length get the column added (existing bookings become 1 hour)
@@ -130,6 +153,12 @@ if (!userColumns.includes('role')) {
       CHECK (role IN ('user', 'admin'));
     UPDATE users SET role = 'admin' WHERE is_admin = 1;
   `);
+}
+
+// Dishes created before photos existed have none (the pages show the section's icon instead)
+const menuColumns = db.prepare('PRAGMA table_info(menu_items)').all().map((c) => c.name);
+if (!menuColumns.includes('image_url')) {
+  db.exec("ALTER TABLE menu_items ADD COLUMN image_url TEXT NOT NULL DEFAULT ''");
 }
 
 // Restaurants created before cities existed are all in Yerevan
@@ -328,6 +357,68 @@ function requireAdmin(req, res, message = 'Մուտքն արգելված է') {
 }
 
 const RESTAURANTS_ADMIN_ONLY = 'Միայն ադմինը կարող է փոխել ռեստորանները';
+
+// Menu sections in the order they are shown (the names are translated on the pages)
+const MENU_CATEGORIES = ['starters', 'salads', 'soups', 'mains', 'grill', 'desserts', 'drinks'];
+const MENU_LIMITS = { name: 80, description: 200, imageUrl: 500 };
+const MAX_PRICE = 10000000;
+const MAX_ORDER_LINES = 50;
+const MAX_DISH_QTY = 20;
+
+// The dishes ordered with each booking, as { reservationId: [{ name, price, qty }] }
+function ordersFor(reservationIds) {
+  const orders = {};
+  if (!reservationIds.length) return orders;
+  const rows = db.prepare(`
+    SELECT reservation_id, name, price, qty FROM reservation_items
+    WHERE reservation_id IN (${reservationIds.map(() => '?').join(',')}) ORDER BY id
+  `).all(...reservationIds);
+  rows.forEach((row) => {
+    (orders[row.reservation_id] ||= []).push({ name: row.name, price: row.price, qty: row.qty });
+  });
+  return orders;
+}
+
+// Checks the guest's order against the restaurant's menu; returns the dishes to save, or an error text
+function readOrder(order, restaurantId) {
+  if (order == null) return { lines: [] };
+  if (!Array.isArray(order) || order.length > MAX_ORDER_LINES) return { error: 'Պատվերը սխալ է' };
+  const findDish = db.prepare('SELECT name, price FROM menu_items WHERE id = ? AND restaurant_id = ?');
+  const lines = [];
+  for (const line of order) {
+    const id = Number(line && line.id);
+    const qty = Number(line && line.qty);
+    if (!Number.isInteger(qty) || qty < 1 || qty > MAX_DISH_QTY) return { error: 'Պատվերը սխալ է' };
+    const dish = Number.isInteger(id) && findDish.get(id, restaurantId);
+    if (!dish) return { error: 'Ճաշացանկում այդպիսի ուտեստ չկա' };
+    lines.push({ name: dish.name, price: dish.price, qty });
+  }
+  return { lines };
+}
+
+// Validates a dish; sends 400 and returns null when something is wrong
+function readMenuItem(body, res) {
+  const item = {
+    category: asText(body.category),
+    name: asText(body.name),
+    description: asText(body.description),
+    price: Number(body.price),
+    imageUrl: asText(body.imageUrl),
+  };
+  let error = null;
+  if (!MENU_CATEGORIES.includes(item.category)) error = { category: 'Ընտրեք բաժինը' };
+  else if (!item.name) error = { name: 'Գրեք ուտեստի անվանումը' };
+  else if (item.name.length > MENU_LIMITS.name) error = { name: 'Տեքստը չափազանց երկար է' };
+  else if (item.description.length > MENU_LIMITS.description) error = { description: 'Տեքստը չափազանց երկար է' };
+  else if (!Number.isInteger(item.price) || item.price < 0 || item.price > MAX_PRICE) error = { price: 'Նշեք ճիշտ գին' };
+  else if (item.imageUrl.length > MENU_LIMITS.imageUrl) error = { imageUrl: 'Տեքստը չափազանց երկար է' };
+  else if (item.imageUrl && !/^https:\/\/\S+$/.test(item.imageUrl)) error = { imageUrl: 'Լուսանկարի հղումը պետք է սկսվի https://-ով' };
+  if (error) {
+    sendJson(res, 400, { errors: error });
+    return null;
+  }
+  return item;
+}
 
 const RESTAURANT_LIMITS = { name: 80, cuisine: 40, address: 120, description: 300, imageUrl: 500 };
 
@@ -557,6 +648,58 @@ const routes = {
     sendJson(res, 200, { ok: true });
   },
 
+  // ---------- Menu: everyone can see it, only the admin can change it ----------
+
+  'GET /api/menu': (req, res, url) => {
+    const restaurantId = Number(url.searchParams.get('restaurantId'));
+    if (!Number.isInteger(restaurantId) || !db.prepare('SELECT 1 FROM restaurants WHERE id = ?').get(restaurantId)) {
+      return sendJson(res, 404, { error: 'Այդպիսի ռեստորան չկա' });
+    }
+    const items = db.prepare(`
+      SELECT id, category, name, description, price, image_url AS imageUrl FROM menu_items WHERE restaurant_id = ? ORDER BY id
+    `).all(restaurantId);
+    sendJson(res, 200, { categories: MENU_CATEGORIES, items: items.map((i) => ({ ...i })) });
+  },
+
+  'POST /api/admin/menu': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const body = await readJson(req);
+    const restaurantId = Number(body.restaurantId);
+    if (!Number.isInteger(restaurantId) || !db.prepare('SELECT 1 FROM restaurants WHERE id = ?').get(restaurantId)) {
+      return sendJson(res, 404, { error: 'Այդպիսի ռեստորան չկա' });
+    }
+    const item = readMenuItem(body, res);
+    if (!item) return;
+
+    const { lastInsertRowid } = db
+      .prepare('INSERT INTO menu_items (restaurant_id, category, name, description, price, image_url) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(restaurantId, item.category, item.name, item.description, item.price, item.imageUrl);
+    sendJson(res, 201, { item: { id: Number(lastInsertRowid), ...item } });
+  },
+
+  'POST /api/admin/menu/update': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const body = await readJson(req);
+    const id = Number(body.id);
+    if (!Number.isInteger(id) || !db.prepare('SELECT 1 FROM menu_items WHERE id = ?').get(id)) {
+      return sendJson(res, 404, { error: 'Այդպիսի ուտեստ չկա' });
+    }
+    const item = readMenuItem(body, res);
+    if (!item) return;
+
+    db.prepare('UPDATE menu_items SET category = ?, name = ?, description = ?, price = ?, image_url = ? WHERE id = ?')
+      .run(item.category, item.name, item.description, item.price, item.imageUrl, id);
+    sendJson(res, 200, { item: { id, ...item } });
+  },
+
+  'POST /api/admin/menu/delete': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const id = Number((await readJson(req)).id);
+    const { changes } = Number.isInteger(id) ? db.prepare('DELETE FROM menu_items WHERE id = ?').run(id) : { changes: 0 };
+    if (!changes) return sendJson(res, 404, { error: 'Այդպիսի ուտեստ չկա' });
+    sendJson(res, 200, { ok: true });
+  },
+
   // Reads a restaurant's web page and returns its data for the admin's form (nothing is saved)
   'POST /api/admin/restaurants/import': async (req, res) => {
     if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
@@ -692,10 +835,12 @@ const routes = {
     `).all(user.id);
 
     // Bookings whose hour is over (the guests have been served) are no longer shown; they stay in the database
+    const upcoming = reservations.filter((r) => !hasEnded(r));
+    const orders = ordersFor(upcoming.map((r) => r.id));
     sendJson(res, 200, {
-      reservations: reservations
-        .filter((r) => !hasEnded(r))
-        .map((r) => ({ ...r, canCancel: r.status !== 'cancelled' && canStillCancel(r) })),
+      reservations: upcoming.map((r) => ({
+        ...r, order: orders[r.id] || [], canCancel: r.status !== 'cancelled' && canStillCancel(r),
+      })),
     });
   },
 
@@ -706,7 +851,7 @@ const routes = {
 
     const reservations = db.prepare(`
       SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
-        COALESCE(rest.name, '') AS restaurantName,
+        COALESCE(rest.name, '') AS restaurantName, COALESCE(rest.city, '') AS restaurantCity,
         u.first_name || ' ' || u.last_name AS guestName, u.email AS guestEmail
       FROM reservations r
       JOIN tables t ON t.id = r.table_id
@@ -716,7 +861,9 @@ const routes = {
     `).all();
 
     // Same rule as the guests' list: bookings whose hour is over are not shown
-    sendJson(res, 200, { reservations: reservations.filter((r) => !hasEnded(r)).map((r) => ({ ...r })) });
+    const upcoming = reservations.filter((r) => !hasEnded(r));
+    const orders = ordersFor(upcoming.map((r) => r.id));
+    sendJson(res, 200, { reservations: upcoming.map((r) => ({ ...r, order: orders[r.id] || [] })) });
   },
 
   // A restaurant's tables on a given date, each with its bookings that day.
@@ -857,17 +1004,26 @@ const routes = {
       return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
     }
 
+    // Dishes chosen from this restaurant's menu (optional)
+    const { lines: order, error: orderError } = readOrder(body.order, table.restaurant_id);
+    if (orderError) return sendJson(res, 400, { error: orderError });
+
     try {
+      db.exec('BEGIN');
       const { lastInsertRowid } = db
         .prepare('INSERT INTO reservations (user_id, table_id, date, time, guests, duration) VALUES (?, ?, ?, ?, ?, ?)')
         .run(user.id, table.id, date, time, guests, BOOKING_MINUTES);
+      const insertLine = db.prepare('INSERT INTO reservation_items (reservation_id, name, price, qty) VALUES (?, ?, ?, ?)');
+      order.forEach((line) => insertLine.run(lastInsertRowid, line.name, line.price, line.qty));
+      db.exec('COMMIT');
       sendJson(res, 201, {
         reservation: {
           id: Number(lastInsertRowid), date, time, duration: BOOKING_MINUTES, guests, status: 'pending',
-          tableNumber: table.number, restaurantName: table.restaurantName,
+          tableNumber: table.number, restaurantName: table.restaurantName, order,
         },
       });
     } catch (err) {
+      if (db.isTransaction) db.exec('ROLLBACK');
       if (/UNIQUE/.test(err.message)) {
         return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
       }
@@ -895,7 +1051,8 @@ function serveStatic(res, urlPath) {
       return res.end('Not found');
     }
     const type = MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
-    res.writeHead(200, { 'Content-Type': type });
+    // The browser checks for a newer file every time, so changes to the pages show up without Ctrl+F5
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
     res.end(data);
   });
 }

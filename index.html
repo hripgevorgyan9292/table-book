@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Table Book — table booking</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <header>
@@ -187,6 +187,15 @@
               <div><dt data-i18n="factTime">Time</dt><dd id="panelTime"></dd></div>
               <div><dt data-i18n="factGuests">Guests</dt><dd id="panelGuests"></dd></div>
             </dl>
+            <!-- Ճաշացանկից ընտրված ուտեստները, որոնք կուղարկվեն ամրագրման հետ -->
+            <div class="panel-order" id="panelOrder">
+              <div class="panel-order-head">
+                <span data-i18n="orderTitle">Your order</span>
+                <button class="link-btn" id="panelOrderEdit" type="button">Add dishes</button>
+              </div>
+              <ul class="panel-order-list" id="panelOrderList"></ul>
+              <p class="panel-order-total" id="panelOrderTotal"></p>
+            </div>
             <button class="search-btn" id="bookBtn" type="button" data-i18n="bookNow">Book</button>
           </div>
         </aside>
@@ -328,6 +337,28 @@
     </div>
   </div>
 
+  <!-- Ռեստորանի ճաշացանկը՝ բաժիններով և գներով -->
+  <div class="modal-overlay" id="menuModal" hidden>
+    <div class="modal menu-modal" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="menuTitle"></h2>
+      <p class="menu-meta" id="menuMeta"></p>
+      <div class="menu-tabs" id="menuTabs"></div>
+      <p class="menu-empty" id="menuEmpty" hidden data-i18n="menuEmpty">The menu isn't ready yet.</p>
+      <div class="menu-list" id="menuList"></div>
+      <!-- Ընտրված ուտեստների ամփոփումը. պատվերը ուղարկվում է ամրագրման հետ -->
+      <div class="menu-order-bar" id="menuOrderBar" hidden>
+        <div class="menu-order-head">
+          <strong data-i18n="orderTitle">Your order</strong>
+          <button class="link-btn" id="menuOrderClear" type="button" data-i18n="orderClear">Clear</button>
+        </div>
+        <ul class="menu-order-list" id="menuOrderList"></ul>
+        <p class="menu-order-total" id="menuOrderSummary"></p>
+      </div>
+      <button class="search-btn menu-book-btn" id="menuBookBtn" type="button">Book a table</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" hidden></div>
 
   <footer>
@@ -336,7 +367,7 @@
     </div>
   </footer>
 
-  <script src="i18n.js"></script>
-  <script src="script.js"></script>
+  <script src="i18n.js?v=2"></script>
+  <script src="script.js?v=2"></script>
 </body>
 </html>

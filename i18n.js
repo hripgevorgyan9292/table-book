@@ -195,6 +195,53 @@ const TRANSLATIONS = {
     allCities: "Բոլոր քաղաքները",
     noRestaurantsInCity: "Այս քաղաքում դեռ ռեստորաններ չկան։",
     errCity: "Ընտրեք քաղաքը",
+    dishAdd: "Ընտրել",
+    dishMore: "Ավելացնել մեկ «{name}»",
+    dishLess: "Հանել մեկ «{name}»",
+    orderTitle: "Ձեր պատվերը",
+    orderAdd: "+ Ընտրել ուտեստներ",
+    orderChange: "Փոխել",
+    orderClear: "Մաքրել",
+    orderTotal: "Ընդամենը՝ {total}",
+    orderSummary: "Ընդամենը՝ {n} ուտեստ · {total}",
+    orderRemove: "Հանել «{name}»-ը պատվերից",
+    bookWithOrder: "Ամրագրել սեղան այս պատվերով",
+    errOrder: "Պատվերը սխալ է",
+    errOrderDish: "Ճաշացանկում այդպիսի ուտեստ չկա",
+    menuBtn: "Ճաշացանկ",
+    menuAll: "Բոլորը",
+    menuEmpty: "Ճաշացանկը դեռ պատրաստ չէ։",
+    menuEmptyAdmin: "Ուտեստներ դեռ չկան։ Ավելացրեք առաջինը ներքևի ձևով։",
+    dishFormAdd: "Նոր ուտեստ",
+    dishFormEdit: "Փոխել՝ {name}",
+    menuEditorTitle: "Ճաշացանկ՝ {name}",
+    menuDishCount: "{n} ուտեստ",
+    menuCat_starters: "Նախուտեստներ",
+    menuCat_salads: "Աղցաններ",
+    menuCat_soups: "Ապուրներ",
+    menuCat_mains: "Հիմնական ուտեստներ",
+    menuCat_grill: "Խորոված և գրիլ",
+    menuCat_desserts: "Աղանդեր",
+    menuCat_drinks: "Ըմպելիքներ",
+    labelCategory: "Բաժին",
+    labelPrice: "Գին, ֏",
+    labelDishName: "Ուտեստ",
+    labelDishDescription: "Նկարագրություն",
+    labelDishImage: "Ուտեստի նկարի հղում (https://…)",
+    bookingsCount: "{n} ամրագրում",
+    newBookings: "{n} նոր",
+    cityUnknown: "Առանց քաղաքի",
+    addDish: "Ավելացնել ուտեստ",
+    saveDish: "Պահպանել փոփոխությունը",
+    cancelEdit: "Չեղարկել",
+    dishAdded: "Ուտեստն ավելացվեց։",
+    dishSaved: "Ուտեստը պահպանվեց։",
+    dishDeleted: "Ուտեստը ջնջվեց։",
+    deleteDishConfirm: "Ջնջե՞լ «{name}» ուտեստը ճաշացանկից։",
+    errDishName: "Գրեք ուտեստի անվանումը",
+    errPrice: "Նշեք ճիշտ գին",
+    errCategory: "Ընտրեք բաժինը",
+    errNoDish: "Այդպիսի ուտեստ չկա",
     restaurantSearchPlaceholder: "Որոնել ըստ անվանման, խոհանոցի, հասցեի կամ քաղաքի",
     restaurantSearchFound: "Գտնվեց՝ {n}",
     restaurantSearchNone: "Այդպիսի ռեստորան չգտնվեց։",
@@ -433,6 +480,53 @@ const TRANSLATIONS = {
     allCities: "Все города",
     noRestaurantsInCity: "В этом городе пока нет ресторанов.",
     errCity: "Выберите город",
+    dishAdd: "Выбрать",
+    dishMore: "Добавить ещё «{name}»",
+    dishLess: "Убрать одно «{name}»",
+    orderTitle: "Ваш заказ",
+    orderAdd: "+ Выбрать блюда",
+    orderChange: "Изменить",
+    orderClear: "Очистить",
+    orderTotal: "Итого: {total}",
+    orderSummary: "Итого: блюд {n} · {total}",
+    orderRemove: "Убрать «{name}» из заказа",
+    bookWithOrder: "Забронировать столик с этим заказом",
+    errOrder: "Неверный заказ",
+    errOrderDish: "Такого блюда нет в меню",
+    menuBtn: "Меню",
+    menuAll: "Все",
+    menuEmpty: "Меню пока не готово.",
+    menuEmptyAdmin: "Блюд пока нет. Добавьте первое с помощью формы ниже.",
+    dishFormAdd: "Новое блюдо",
+    dishFormEdit: "Изменить: {name}",
+    menuEditorTitle: "Меню: {name}",
+    menuDishCount: "Блюд: {n}",
+    menuCat_starters: "Закуски",
+    menuCat_salads: "Салаты",
+    menuCat_soups: "Супы",
+    menuCat_mains: "Основные блюда",
+    menuCat_grill: "Шашлык и гриль",
+    menuCat_desserts: "Десерты",
+    menuCat_drinks: "Напитки",
+    labelCategory: "Раздел",
+    labelPrice: "Цена, ֏",
+    labelDishName: "Блюдо",
+    labelDishDescription: "Описание",
+    labelDishImage: "Ссылка на фото блюда (https://…)",
+    bookingsCount: "Бронирований: {n}",
+    newBookings: "Новых: {n}",
+    cityUnknown: "Без города",
+    addDish: "Добавить блюдо",
+    saveDish: "Сохранить изменения",
+    cancelEdit: "Отмена",
+    dishAdded: "Блюдо добавлено.",
+    dishSaved: "Блюдо сохранено.",
+    dishDeleted: "Блюдо удалено.",
+    deleteDishConfirm: "Удалить блюдо «{name}» из меню?",
+    errDishName: "Введите название блюда",
+    errPrice: "Укажите правильную цену",
+    errCategory: "Выберите раздел",
+    errNoDish: "Такого блюда нет",
     restaurantSearchPlaceholder: "Поиск по названию, кухне, адресу или городу",
     restaurantSearchFound: "Найдено: {n}",
     restaurantSearchNone: "Такой ресторан не найден.",
@@ -670,6 +764,53 @@ const TRANSLATIONS = {
     allCities: "All cities",
     noRestaurantsInCity: "No restaurants in this city yet.",
     errCity: "Choose a city",
+    dishAdd: "Add",
+    dishMore: "Add one more {name}",
+    dishLess: "Remove one {name}",
+    orderTitle: "Your order",
+    orderAdd: "+ Choose dishes",
+    orderChange: "Change",
+    orderClear: "Clear",
+    orderTotal: "Total: {total}",
+    orderSummary: "Total: {n} dishes · {total}",
+    orderRemove: "Remove {name} from the order",
+    bookWithOrder: "Book a table with this order",
+    errOrder: "The order is not valid",
+    errOrderDish: "This dish is not on the menu",
+    menuBtn: "Menu",
+    menuAll: "All",
+    menuEmpty: "The menu isn't ready yet.",
+    menuEmptyAdmin: "No dishes yet. Add the first one with the form below.",
+    dishFormAdd: "New dish",
+    dishFormEdit: "Edit: {name}",
+    menuEditorTitle: "Menu: {name}",
+    menuDishCount: "{n} dishes",
+    menuCat_starters: "Starters",
+    menuCat_salads: "Salads",
+    menuCat_soups: "Soups",
+    menuCat_mains: "Main courses",
+    menuCat_grill: "Grill & khorovats",
+    menuCat_desserts: "Desserts",
+    menuCat_drinks: "Drinks",
+    labelCategory: "Section",
+    labelPrice: "Price, ֏",
+    labelDishName: "Dish",
+    labelDishDescription: "Description",
+    labelDishImage: "Dish photo link (https://…)",
+    bookingsCount: "{n} bookings",
+    newBookings: "{n} new",
+    cityUnknown: "No city",
+    addDish: "Add dish",
+    saveDish: "Save changes",
+    cancelEdit: "Cancel",
+    dishAdded: "Dish added.",
+    dishSaved: "Dish saved.",
+    dishDeleted: "Dish deleted.",
+    deleteDishConfirm: "Delete \"{name}\" from the menu?",
+    errDishName: "Enter the dish name",
+    errPrice: "Enter a valid price",
+    errCategory: "Choose a section",
+    errNoDish: "No such dish",
     restaurantSearchPlaceholder: "Search by name, cuisine, address or city",
     restaurantSearchFound: "Found: {n}",
     restaurantSearchNone: "No restaurant matches your search.",
@@ -774,6 +915,85 @@ function restaurantLocation(restaurant) {
   return line;
 }
 
+// ---------- Ճաշացանկ (ընդհանուր գլխավոր և ադմին էջերի համար) ----------
+
+// Գինը դրամով՝ «3 500 ֏»
+function formatPrice(price) {
+  return String(price).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ֏";
+}
+
+// Ուտեստի փոքր նկարը. եթե նկար չկա (կամ չի բացվում)՝ բաժնի պատկերակը
+const MENU_ICONS = { starters: "🥖", salads: "🥗", soups: "🍲", mains: "🍽️", grill: "🍖", desserts: "🍰", drinks: "🥤" };
+
+function dishThumb(dish) {
+  const thumb = document.createElement("div");
+  thumb.className = "menu-thumb";
+  const showIcon = () => {
+    thumb.innerHTML = "";
+    thumb.textContent = MENU_ICONS[dish.category] || "🍽️";
+  };
+  if (dish.imageUrl && dish.imageUrl.startsWith("https://")) {
+    const img = document.createElement("img");
+    img.src = dish.imageUrl;
+    img.alt = dish.name;
+    img.loading = "lazy";
+    img.addEventListener("error", showIcon);
+    thumb.appendChild(img);
+  } else {
+    showIcon();
+  }
+  return thumb;
+}
+
+// Ամրագրման հետ պատվիրված ուտեստները մեկ տողով՝ «🍽 Dolma × 2, Gata × 1 · 8 200 ֏»
+function orderLine(order, tag = "span") {
+  if (!order || !order.length) return null;
+  const line = document.createElement(tag);
+  line.className = "booking-order";
+  const total = order.reduce((sum, dish) => sum + dish.price * dish.qty, 0);
+  line.textContent = "🍽 " + order.map((dish) => dish.name + " × " + dish.qty).join(", ") + " · " + formatPrice(total);
+  return line;
+}
+
+// Ուտեստները՝ բաժիններով (categories-ի հերթականությամբ). category-ով՝ միայն այդ բաժինը։
+// decorate-ը թույլ է տալիս ադմինին ավելացնել «Փոխել» և «Ջնջել» կոճակները
+function renderMenuList(container, items, categories, { category = "", decorate = null } = {}) {
+  container.innerHTML = "";
+  categories.filter((key) => !category || key === category).forEach((key) => {
+    const dishes = items.filter((item) => item.category === key);
+    if (!dishes.length) return;
+
+    const group = document.createElement("section");
+    group.className = "menu-group";
+    const title = document.createElement("h3");
+    title.textContent = t("menuCat_" + key);
+    const list = document.createElement("ul");
+    dishes.forEach((dish) => {
+      const row = document.createElement("li");
+      row.className = "menu-item";
+      const thumb = dishThumb(dish);
+      const text = document.createElement("div");
+      text.className = "menu-item-text";
+      const name = document.createElement("strong");
+      name.textContent = dish.name;
+      text.appendChild(name);
+      if (dish.description) {
+        const description = document.createElement("span");
+        description.textContent = dish.description;
+        text.appendChild(description);
+      }
+      const price = document.createElement("span");
+      price.className = "menu-price";
+      price.textContent = formatPrice(dish.price);
+      row.append(thumb, text, price);
+      if (decorate) decorate(row, dish);
+      list.appendChild(row);
+    });
+    group.append(title, list);
+    container.appendChild(group);
+  });
+}
+
 // Լցնում է քաղաքների ցանկը. allLabel-ով առաջինը «Բոլոր քաղաքները» տարբերակն է (դատարկ արժեքով)։
 // counts-ով քաղաքի կողքին գրվում է, քանի ռեստորան կա այնտեղ
 function fillCitySelect(select, { allLabel = false, counts = null } = {}) {
@@ -819,6 +1039,12 @@ const SERVER_MESSAGES = {
   "Ամրագրումը պետք է ավարտվի մինչև 23:00": "errClosing",
   "Գրեք ռեստորանի անվանումը": "errName",
   "Ընտրեք քաղաքը": "errCity",
+  "Պատվերը սխալ է": "errOrder",
+  "Ճաշացանկում այդպիսի ուտեստ չկա": "errOrderDish",
+  "Ընտրեք բաժինը": "errCategory",
+  "Գրեք ուտեստի անվանումը": "errDishName",
+  "Նշեք ճիշտ գին": "errPrice",
+  "Այդպիսի ուտեստ չկա": "errNoDish",
   "Տեղադրեք ճիշտ հղում (https://…)": "errImportUrl",
   "Հղումը սխալ է": "errImportBadUrl",
   "Էջը բացել չհաջողվեց": "errImportFetch",

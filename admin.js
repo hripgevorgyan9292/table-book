@@ -153,55 +153,117 @@ setInterval(() => {
   if (currentUser && currentUser.isAdmin && !document.hidden) loadAdminBookings();
 }, 30 * 1000);
 
+// Քաղաքները, որոնց ցանկը ադմինը բացել է (մնում են բաց 30 վայրկյանը մեկ թարմանալիս)
+const openBookingCities = new Set();
+
 function renderAdminBookings() {
   adminBookingsList.innerHTML = "";
   adminBookingsEmpty.hidden = adminBookings.length > 0;
 
-  adminBookings.forEach((booking) => {
-    const item = document.createElement("li");
-    item.className = "booking-item" + (booking.status === "cancelled" ? " is-cancelled" : "");
+  // Խմբեր ըստ քաղաքների. նախ այն քաղաքները, որտեղ կան նոր (սպասող) ամրագրումներ, հետո մնացածը՝ ցանկի կարգով
+  const cityOrder = (key) => CITIES.findIndex((c) => c.key === key);
+  const groups = {};
+  adminBookings.forEach((booking) => { (groups[booking.restaurantCity] ||= []).push(booking); });
+  const newCount = (list) => list.filter((b) => b.status === "pending").length;
+  Object.keys(groups)
+    .sort((a, b) => (newCount(groups[b]) > 0) - (newCount(groups[a]) > 0) || cityOrder(a) - cityOrder(b))
+    .forEach((city) => adminBookingsList.appendChild(bookingCityGroup(city, groups[city], newCount(groups[city]))));
+}
 
-    const main = document.createElement("div");
-    main.className = "booking-main";
-    const title = document.createElement("strong");
-    title.textContent = (booking.restaurantName ? booking.restaurantName + " · " : "") + t("tableN", { n: booking.tableNumber });
-    const details = document.createElement("span");
-    details.textContent = formatDate(booking.date) + ", " + timeRange(booking.time, booking.duration) +
-      " · " + t("guestsOption", { n: booking.guests });
-    const guest = document.createElement("span");
-    guest.className = "booking-guest";
-    guest.textContent = "👤 " + booking.guestName + " · " + booking.guestEmail;
-    main.append(title, details, guest);
+// Քաղաքի կոճակը (անուն, քանակ, «N նոր») և դրա տակ բացվող ամրագրումները
+function bookingCityGroup(city, bookings, fresh) {
+  const group = document.createElement("section");
+  group.className = "booking-city";
+  const open = openBookingCities.has(city);
 
-    if (booking.rejectReason) {
-      const reason = document.createElement("span");
-      reason.className = "reject-reason";
-      reason.textContent = t("rejectReasonShown", { reason: booking.rejectReason });
-      main.appendChild(reason);
-    }
-
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "booking-city-toggle" + (fresh ? " has-new" : "");
+  toggle.setAttribute("aria-expanded", String(open));
+  const name = document.createElement("span");
+  name.className = "booking-city-name";
+  name.textContent = "📍 " + (city ? cityName(city) : t("cityUnknown"));
+  const count = document.createElement("span");
+  count.className = "booking-city-count";
+  count.textContent = t("bookingsCount", { n: bookings.length });
+  toggle.append(name, count);
+  if (fresh) {
     const badge = document.createElement("span");
-    badge.className = "status-badge " + booking.status;
-    badge.textContent = t(booking.rejectReason ? "statusRejected" : STATUS_KEYS[booking.status] || "statusPending");
-    item.append(main, badge);
+    badge.className = "booking-city-new";
+    badge.textContent = t("newBookings", { n: fresh });
+    toggle.appendChild(badge);
+  }
+  const chevron = document.createElement("span");
+  chevron.className = "my-chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  chevron.textContent = "▾";
+  toggle.appendChild(chevron);
 
-    if (booking.status === "pending") {
-      const confirmBtn = document.createElement("button");
-      confirmBtn.type = "button";
-      confirmBtn.className = "search-btn";
-      confirmBtn.textContent = t("confirmBtn");
-      confirmBtn.addEventListener("click", () => confirmBooking(booking, confirmBtn));
+  const list = document.createElement("ul");
+  list.className = "my-bookings-list booking-city-list";
+  list.hidden = !open;
+  bookings.forEach((booking) => list.appendChild(bookingItem(booking)));
 
-      const rejectBtn = document.createElement("button");
-      rejectBtn.type = "button";
-      rejectBtn.className = "cancel-btn";
-      rejectBtn.textContent = t("rejectBtn");
-      rejectBtn.addEventListener("click", () => openRejectForm(booking));
-      item.append(confirmBtn, rejectBtn);
-    }
-
-    adminBookingsList.appendChild(item);
+  toggle.addEventListener("click", () => {
+    const nowOpen = list.hidden;
+    list.hidden = !nowOpen;
+    toggle.setAttribute("aria-expanded", String(nowOpen));
+    if (nowOpen) openBookingCities.add(city);
+    else openBookingCities.delete(city);
   });
+
+  group.append(toggle, list);
+  return group;
+}
+
+// Ամրագրման տողը՝ հյուրը, պատվերը, վիճակը և «Հաստատել»/«Մերժել» կոճակները
+function bookingItem(booking) {
+  const item = document.createElement("li");
+  item.className = "booking-item" + (booking.status === "cancelled" ? " is-cancelled" : "");
+
+  const main = document.createElement("div");
+  main.className = "booking-main";
+  const title = document.createElement("strong");
+  title.textContent = (booking.restaurantName ? booking.restaurantName + " · " : "") + t("tableN", { n: booking.tableNumber });
+  const details = document.createElement("span");
+  details.textContent = formatDate(booking.date) + ", " + timeRange(booking.time, booking.duration) +
+    " · " + t("guestsOption", { n: booking.guests });
+  const guest = document.createElement("span");
+  guest.className = "booking-guest";
+  guest.textContent = "👤 " + booking.guestName + " · " + booking.guestEmail;
+  main.append(title, details, guest);
+  // Ուտեստները, որոնք հյուրը պատվիրել է ամրագրման հետ
+  const order = orderLine(booking.order);
+  if (order) main.appendChild(order);
+
+  if (booking.rejectReason) {
+    const reason = document.createElement("span");
+    reason.className = "reject-reason";
+    reason.textContent = t("rejectReasonShown", { reason: booking.rejectReason });
+    main.appendChild(reason);
+  }
+
+  const badge = document.createElement("span");
+  badge.className = "status-badge " + booking.status;
+  badge.textContent = t(booking.rejectReason ? "statusRejected" : STATUS_KEYS[booking.status] || "statusPending");
+  item.append(main, badge);
+
+  if (booking.status === "pending") {
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "search-btn";
+    confirmBtn.textContent = t("confirmBtn");
+    confirmBtn.addEventListener("click", () => confirmBooking(booking, confirmBtn));
+
+    const rejectBtn = document.createElement("button");
+    rejectBtn.type = "button";
+    rejectBtn.className = "cancel-btn";
+    rejectBtn.textContent = t("rejectBtn");
+    rejectBtn.addEventListener("click", () => openRejectForm(booking));
+    item.append(confirmBtn, rejectBtn);
+  }
+
+  return item;
 }
 
 async function confirmBooking(booking, btn) {
@@ -538,7 +600,12 @@ function renderRestaurants() {
     deleteBtn.className = "cancel-btn";
     deleteBtn.textContent = t("deleteBtn");
     deleteBtn.addEventListener("click", () => deleteRestaurant(restaurant, deleteBtn));
-    actions.append(editBtn, deleteBtn);
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "outline-btn";
+    menuBtn.textContent = t("menuBtn");
+    menuBtn.addEventListener("click", () => openMenuEditor(restaurant));
+    actions.append(menuBtn, editBtn, deleteBtn);
     card.appendChild(actions);
 
     restaurantGrid.appendChild(card);
@@ -575,6 +642,195 @@ function openRestaurantForm(restaurant) {
 }
 
 addRestaurantBtn.addEventListener("click", () => openRestaurantForm(null));
+
+// ---------- Ճաշացանկի խմբագրում ----------
+
+const menuEditorModal = document.getElementById("menuEditorModal");
+const menuEditorTitle = document.getElementById("menuEditorTitle");
+const menuEditorMeta = document.getElementById("menuEditorMeta");
+const menuEditorList = document.getElementById("menuEditorList");
+const menuEditorEmpty = document.getElementById("menuEditorEmpty");
+const menuEditorTabs = document.getElementById("menuEditorTabs");
+const dishForm = document.getElementById("dishForm");
+const dishSubmit = document.getElementById("dishSubmit");
+const dishCancel = document.getElementById("dishCancel");
+const dishFormTitle = document.getElementById("dishFormTitle");
+const DISH_FIELDS = { category: "dCategory", name: "dName", description: "dDescription", price: "dPrice", imageUrl: "dImage" };
+// { restaurant, items, categories, editing } — editing՝ այն ուտեստը, որը հիմա փոխվում է
+let menuEditor = null;
+
+async function openMenuEditor(restaurant) {
+  menuEditor = { restaurant, items: [], categories: [], editing: null, category: "" };
+  if (!(await loadMenuEditor())) return;
+  resetDishForm();
+  menuEditorModal.hidden = false;
+  menuEditorModal.querySelector(".modal").scrollTop = 0;
+  menuEditorModal.querySelector(".modal-close").focus();
+}
+
+async function loadMenuEditor() {
+  try {
+    const response = await fetch("/api/menu?restaurantId=" + menuEditor.restaurant.id);
+    const result = await response.json();
+    if (!response.ok) {
+      showToast(translateServer(result.error));
+      return false;
+    }
+    menuEditor.items = result.items;
+    menuEditor.categories = result.categories;
+    renderMenuEditor();
+    return true;
+  } catch (e) {
+    showToast(t("networkError"));
+    return false;
+  }
+}
+
+function renderMenuEditor() {
+  if (!menuEditor) return;
+  const { restaurant, items, categories } = menuEditor;
+  menuEditorTitle.textContent = t("menuEditorTitle", { name: restaurant.name });
+  menuEditorMeta.textContent = [restaurant.cuisine, cityName(restaurant.city), t("menuDishCount", { n: items.length })]
+    .filter(Boolean).join(" · ");
+
+  const select = dishForm.elements.category;
+  const previous = select.value;
+  select.innerHTML = "";
+  categories.forEach((key) => select.add(new Option(t("menuCat_" + key), key)));
+  if (previous) select.value = previous;
+
+  dishSubmit.textContent = t(menuEditor.editing ? "saveDish" : "addDish");
+  dishFormTitle.textContent = menuEditor.editing ? t("dishFormEdit", { name: menuEditor.editing.name }) : t("dishFormAdd");
+  // Եթե ընտրված բաժնում ուտեստ չի մնացել, վերադառնալ «Բոլորը»-ին
+  if (menuEditor.category && !items.some((item) => item.category === menuEditor.category)) menuEditor.category = "";
+  // Բաժինների կոճակներ վերևում՝ «Բոլորը» և այն բաժինները, որտեղ ուտեստ կա (ինչպես գլխավոր էջում)
+  menuEditorTabs.innerHTML = "";
+  ["", ...categories.filter((key) => items.some((item) => item.category === key))].forEach((key) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "menu-tab" + (key === menuEditor.category ? " active" : "");
+    tab.textContent = key ? t("menuCat_" + key) : t("menuAll");
+    tab.addEventListener("click", () => {
+      menuEditor.category = key;
+      renderMenuEditor();
+    });
+    menuEditorTabs.appendChild(tab);
+  });
+  menuEditorTabs.hidden = items.length === 0;
+
+  menuEditorEmpty.hidden = items.length > 0;
+  renderMenuList(menuEditorList, items, categories, {
+    category: menuEditor.category,
+    decorate: (row, dish) => {
+      if (menuEditor.editing && menuEditor.editing.id === dish.id) row.classList.add("editing");
+      const actions = document.createElement("div");
+      actions.className = "menu-item-actions";
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "outline-btn";
+      editBtn.textContent = t("editBtn");
+      editBtn.addEventListener("click", () => editDish(dish));
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "cancel-btn";
+      deleteBtn.textContent = t("deleteBtn");
+      deleteBtn.addEventListener("click", () => deleteDish(dish, deleteBtn));
+      actions.append(editBtn, deleteBtn);
+      row.appendChild(actions);
+    },
+  });
+}
+
+// Ձևը վերադառնում է «Ավելացնել» վիճակին. բաժինը մնում է նույնը, որ հարմար լինի մի քանի ուտեստ անընդմեջ ավելացնել
+function resetDishForm() {
+  const category = dishForm.elements.category.value;
+  dishForm.reset();
+  if (category) dishForm.elements.category.value = category;
+  Object.values(DISH_FIELDS).forEach((id) => showError(id, ""));
+  menuEditor.editing = null;
+  dishCancel.hidden = true;
+  renderMenuEditor();
+}
+
+function editDish(dish) {
+  menuEditor.editing = dish;
+  Object.keys(DISH_FIELDS).forEach((field) => { dishForm.elements[field].value = dish[field]; });
+  Object.values(DISH_FIELDS).forEach((id) => showError(id, ""));
+  dishCancel.hidden = false;
+  renderMenuEditor();
+  // Ձևը ներքևում է՝ թերթել մինչև այն
+  dishForm.scrollIntoView({ behavior: "smooth", block: "end" });
+  dishForm.elements.name.focus({ preventScroll: true });
+}
+
+dishCancel.addEventListener("click", resetDishForm);
+dishForm.addEventListener("input", (event) => showError(event.target.id, ""));
+
+dishForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = {
+    category: dishForm.elements.category.value,
+    name: dishForm.elements.name.value.trim(),
+    description: dishForm.elements.description.value.trim(),
+    price: Number(dishForm.elements.price.value),
+    imageUrl: dishForm.elements.imageUrl.value.trim(),
+  };
+  if (!data.name) return showError("dName", t("errDishName"));
+  if (dishForm.elements.price.value === "" || !Number.isInteger(data.price) || data.price < 0) {
+    return showError("dPrice", t("errPrice"));
+  }
+  if (data.imageUrl && !/^https:\/\/\S+$/.test(data.imageUrl)) return showError("dImage", t("errImage"));
+
+  dishSubmit.disabled = true;
+  try {
+    const editing = menuEditor.editing;
+    const { ok, result } = editing
+      ? await postJson("/api/admin/menu/update", { id: editing.id, ...data })
+      : await postJson("/api/admin/menu", { restaurantId: menuEditor.restaurant.id, ...data });
+    if (!ok) {
+      Object.entries(result.errors || {}).forEach(([field, message]) => showError(DISH_FIELDS[field], translateServer(message)));
+      if (result.error) showToast(translateServer(result.error));
+      return;
+    }
+    showToast(t(editing ? "dishSaved" : "dishAdded"));
+    // Եթե ընտրված է այլ բաժին, անցնել ավելացված կամ փոխված ուտեստի բաժնին, որ այն երևա
+    if (menuEditor.category && menuEditor.category !== data.category) menuEditor.category = data.category;
+    await loadMenuEditor();
+    resetDishForm();
+    dishForm.scrollIntoView({ block: "end" });
+    dishForm.elements.name.focus({ preventScroll: true });
+  } catch (e) {
+    showToast(t("networkError"));
+  } finally {
+    dishSubmit.disabled = false;
+  }
+});
+
+async function deleteDish(dish, btn) {
+  if (!confirm(t("deleteDishConfirm", { name: dish.name }))) return;
+  btn.disabled = true;
+  try {
+    const { ok, result } = await postJson("/api/admin/menu/delete", { id: dish.id });
+    showToast(ok ? t("dishDeleted") : translateServer(result.error));
+    if (menuEditor.editing && menuEditor.editing.id === dish.id) resetDishForm();
+    await loadMenuEditor();
+  } catch (e) {
+    showToast(t("networkError"));
+    btn.disabled = false;
+  }
+}
+
+function closeMenuEditor() {
+  menuEditorModal.hidden = true;
+}
+
+menuEditorModal.querySelector(".modal-close").addEventListener("click", closeMenuEditor);
+menuEditorModal.addEventListener("click", (event) => {
+  if (event.target === menuEditorModal) closeMenuEditor();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !menuEditorModal.hidden) closeMenuEditor();
+});
 
 // ---------- Ռեստորանի տվյալները՝ նրա էջի հղումով ----------
 
@@ -691,6 +947,7 @@ function applyLanguage() {
   fillCitySelects();
   renderRestaurants();
   renderRejectTemplates();
+  renderMenuEditor();
   restaurantFormTitle.textContent = t(editingRestaurant ? "restaurantFormEdit" : "restaurantFormAdd");
 }
 

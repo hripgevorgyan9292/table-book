@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TableBook — admin panel</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <header>
@@ -59,7 +59,8 @@
       <div class="admin-section">
         <h2 data-i18n="adminBookingsTitle">Bookings</h2>
         <p class="restaurants-empty" id="adminBookingsEmpty" hidden data-i18n="adminBookingsEmpty">No upcoming bookings.</p>
-        <ul class="my-bookings-list" id="adminBookingsList"></ul>
+        <!-- Ամրագրումները՝ ըստ քաղաքների. նոր ամրագրում ունեցող քաղաքի կոճակը փայլում է -->
+        <div class="booking-city-groups" id="adminBookingsList"></div>
       </div>
 
       <!-- Ռեստորաններ. սեղանների զբաղվածությունը և ցուցակի կառավարումը -->
@@ -158,6 +159,53 @@
     </div>
   </div>
 
+  <!-- Ռեստորանի ճաշացանկի խմբագրում՝ ավելացնել, փոխել, ջնջել ուտեստներ -->
+  <div class="modal-overlay" id="menuEditorModal" hidden>
+    <div class="modal menu-modal" role="dialog" aria-modal="true" aria-labelledby="menuEditorTitle">
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="menuEditorTitle"></h2>
+      <p class="menu-meta" id="menuEditorMeta"></p>
+      <div class="menu-tabs" id="menuEditorTabs"></div>
+      <p class="menu-empty" id="menuEditorEmpty" hidden data-i18n="menuEmptyAdmin">No dishes yet. Add the first one with the form below.</p>
+      <div class="menu-list" id="menuEditorList"></div>
+      <!-- Ներքևում՝ նոր ուտեստ ավելացնելու (կամ ընտրվածը փոխելու) ձևը -->
+      <form class="dish-form" id="dishForm" novalidate>
+        <h3 class="dish-form-title" id="dishFormTitle" data-i18n="dishFormAdd">New dish</h3>
+        <div class="form-row">
+          <div class="field">
+            <label for="dCategory" data-i18n="labelCategory">Section</label>
+            <select id="dCategory" name="category"></select>
+            <small class="error-msg" id="dCategoryError"></small>
+          </div>
+          <div class="field">
+            <label for="dPrice" data-i18n="labelPrice">Price, ֏</label>
+            <input type="number" id="dPrice" name="price" min="0" step="50" inputmode="numeric">
+            <small class="error-msg" id="dPriceError"></small>
+          </div>
+        </div>
+        <div class="field">
+          <label for="dName" data-i18n="labelDishName">Dish</label>
+          <input type="text" id="dName" name="name" maxlength="80">
+          <small class="error-msg" id="dNameError"></small>
+        </div>
+        <div class="field">
+          <label for="dDescription" data-i18n="labelDishDescription">Description</label>
+          <input type="text" id="dDescription" name="description" maxlength="200">
+          <small class="error-msg" id="dDescriptionError"></small>
+        </div>
+        <div class="field">
+          <label for="dImage" data-i18n="labelDishImage">Photo link (https://…)</label>
+          <input type="url" id="dImage" name="imageUrl" maxlength="500" placeholder="https://…">
+          <small class="error-msg" id="dImageError"></small>
+        </div>
+        <div class="dish-form-actions">
+          <button class="submit-btn" type="submit" id="dishSubmit" data-i18n="addDish">Add dish</button>
+          <button class="outline-btn" type="button" id="dishCancel" hidden data-i18n="cancelEdit">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Ամրագրման մերժում՝ հյուրին ուղարկվող հաղորդագրությամբ -->
   <div class="modal-overlay" id="rejectModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rejectFormTitle">
@@ -179,7 +227,7 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
-  <script src="i18n.js"></script>
-  <script src="admin.js"></script>
+  <script src="i18n.js?v=2"></script>
+  <script src="admin.js?v=2"></script>
 </body>
 </html>

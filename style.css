@@ -1574,3 +1574,455 @@ footer {
   font-size: 0.85rem;
   pointer-events: none;
 }
+
+/* ---------- Ճաշացանկ ---------- */
+
+.menu-modal { max-width: 640px; }
+
+.menu-modal h2 { margin-bottom: 4px; }
+
+.menu-meta {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Բաժինների կոճակները՝ նույն ոճով, ինչ մերժման պատրաստի պատասխանները */
+.menu-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.menu-tabs[hidden] { display: none; }
+
+.menu-tab {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.menu-tab:hover { border-color: var(--accent); }
+
+.menu-tab.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.menu-empty {
+  margin: 8px 0 16px;
+  color: var(--muted);
+}
+
+.menu-list {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+/* Ճաշացանկի բաժինները <section> են, բայց էջի բաժինների մեծ տարածություններն այստեղ պետք չեն */
+.menu-group {
+  padding: 0;
+  border-top: none;
+}
+
+.menu-group h3 {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.menu-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+/* Ուտեստ՝ անվանումը ձախից, գինը աջից, մեջտեղում՝ կետագիծ */
+.menu-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.menu-item:hover { background: var(--bg); }
+
+.menu-item.editing {
+  background: var(--accent-soft);
+  outline: 1px solid var(--accent);
+}
+
+.menu-item-text {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+.menu-item-text strong { font-size: 0.95rem; }
+
+.menu-item-text span {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.menu-price {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.menu-book-btn { width: 100%; }
+
+/* Admin՝ ուտեստի ձև և կոճակներ */
+.dish-form {
+  margin-top: 4px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.dish-form .field { margin-bottom: 10px; }
+
+.dish-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dish-form-actions .submit-btn { flex: 1; margin-top: 0; }
+
+.dish-form-actions [hidden] { display: none; }
+
+/* Admin-ի ճաշացանկում՝ «Փոխել» և «Ջնջել» ուտեստի կողքին, գնից աջ */
+.menu-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.menu-item-actions .outline-btn,
+.menu-item-actions .cancel-btn {
+  padding: 3px 10px;
+  font-size: 0.78rem;
+}
+
+/* ---------- Ուտեստների ընտրություն և պատվեր ---------- */
+
+.menu-item.chosen { background: var(--accent-soft); }
+
+/* «+ Ընտրել» կամ «−  2  +»՝ գնի տակ, աջ կողմում */
+.dish-qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-basis: 100%;
+  justify-content: flex-end;
+}
+
+.dish-qty-btn {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dish-qty-btn:hover { border-color: var(--accent); }
+
+.dish-qty-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dish-qty-btn.dish-add-btn {
+  padding: 0 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.dish-qty.has-qty .dish-qty-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.dish-qty-count {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Ճաշացանկի ներքևում՝ ընտրվածի ամփոփումը */
+.menu-order-bar {
+  position: sticky;
+  bottom: -24px;
+  margin: 0 -24px 12px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.06);
+}
+
+.menu-order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+/* Ընտրված ուտեստները՝ անվանում × քանակ, մեկի գինը, տողի գինը, «×» */
+.menu-order-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  display: grid;
+  gap: 2px;
+}
+
+.menu-order-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto 28px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.menu-order-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-order-unit {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.menu-order-sum {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.menu-order-remove {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--selected);
+  border-radius: 50%;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.menu-order-remove:hover {
+  background: var(--selected);
+  border-color: var(--selected);
+  color: var(--on-selected);
+}
+
+.menu-order-total {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  color: var(--accent);
+  font-weight: 700;
+  text-align: right;
+}
+
+.menu-order-bar[hidden] { display: none; }
+
+/* Ամրագրման վահանակում՝ պատվերը */
+.panel-order {
+  margin-bottom: 14px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.88rem;
+}
+
+.panel-order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.panel-order-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.panel-order-list:empty { display: none; }
+
+.panel-order-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.panel-order-total {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  color: var(--accent);
+  font-weight: 700;
+  text-align: right;
+}
+
+.panel-order-total[hidden] { display: none; }
+
+/* Ամրագրման քարտերում՝ պատվիրված ուտեստները */
+.booking-order {
+  display: block;
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.booking-main .booking-order {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.dish-form-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+/* Ճաշացանկի ցուցակը և ձևը առանձնացված են բարակ գծով */
+#menuEditorList { margin-bottom: 16px; }
+
+/* Ուտեստի փոքր նկարը (կամ բաժնի պատկերակը) անվանման ձախ կողմում */
+.menu-item { flex-wrap: nowrap; align-items: center; }
+
+.menu-item .dish-qty,
+.menu-item .menu-item-actions { flex-basis: auto; }
+
+.menu-thumb {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
+
+.menu-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 560px) {
+  .menu-item { flex-wrap: wrap; }
+  .menu-thumb { width: 46px; height: 46px; font-size: 1.3rem; }
+  .menu-item .dish-qty { flex-basis: 100%; }
+}
+
+/* ---------- Admin՝ ամրագրումներն ըստ քաղաքների ---------- */
+
+.booking-city-groups {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-city-toggle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.booking-city-toggle:hover { border-color: var(--accent); }
+
+.booking-city-name { font-weight: 700; }
+
+.booking-city-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.booking-city-new {
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: var(--selected);
+  color: var(--on-selected);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.booking-city-toggle .my-chevron { margin-left: auto; }
+
+.booking-city-toggle[aria-expanded="true"] .my-chevron { transform: rotate(180deg); }
+
+/* Նոր ամրագրում ունեցող քաղաքի կոճակը փայլում է */
+.booking-city-toggle.has-new {
+  border-color: var(--selected);
+  animation: booking-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes booking-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(176, 96, 108, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(176, 96, 108, 0.35), 0 0 18px rgba(176, 96, 108, 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booking-city-toggle.has-new { animation: none; box-shadow: 0 0 0 3px rgba(176, 96, 108, 0.35); }
+}
+
+.booking-city-list { margin-top: 8px; }
+
+.booking-city-list[hidden] { display: none; }

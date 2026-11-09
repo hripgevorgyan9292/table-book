@@ -2085,7 +2085,7 @@ footer {
 .content { min-width: 0; }
 
 .content .hero {
-  min-height: 200px;
+  min-height: 270px;
   border-radius: 16px;
   overflow: hidden;
 }

@@ -205,7 +205,7 @@ const TRANSLATIONS = {
 
     adminPageTitle: "TableBook — ադմին պանել",
     adminTag: "Ադմին",
-    adminPanelBtn: "Ադմին պանել",
+    adminPanelBtn: "Ադմին",
     mainPageBtn: "Գլխավոր էջ",
     adminLoginTitle: "Ադմինի մուտք",
     adminLoginLead: "Միայն աշխատակիցների համար։",
@@ -416,7 +416,7 @@ const TRANSLATIONS = {
 
     adminPageTitle: "TableBook — панель администратора",
     adminTag: "Админ",
-    adminPanelBtn: "Админ-панель",
+    adminPanelBtn: "Админ",
     mainPageBtn: "Главная",
     adminLoginTitle: "Вход для администратора",
     adminLoginLead: "Только для сотрудников.",
@@ -626,7 +626,7 @@ const TRANSLATIONS = {
 
     adminPageTitle: "TableBook — admin panel",
     adminTag: "Admin",
-    adminPanelBtn: "Admin panel",
+    adminPanelBtn: "Admin",
     mainPageBtn: "Main page",
     adminLoginTitle: "Admin login",
     adminLoginLead: "For staff only.",

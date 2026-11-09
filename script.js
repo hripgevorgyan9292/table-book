@@ -22,7 +22,6 @@ toggle.addEventListener("click", () => {
 const signupBtn = document.getElementById("signupBtn");
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
-const adminPanelLink = document.getElementById("adminPanelLink");
 const signupModal = document.getElementById("signupModal");
 const loginModal = document.getElementById("loginModal");
 let openedModal = null;
@@ -209,8 +208,6 @@ function showUser(user) {
   logoutBtn.hidden = false;
   loginBtn.hidden = true;
   signupBtn.hidden = true;
-  // Նույն «Log in»-ով մուտք գործած ադմինը տեսնում է «Admin panel» կոճակը
-  adminPanelLink.hidden = !user.isAdmin;
   myBookings.hidden = false;
   loadMyBookings();
 }
@@ -220,7 +217,6 @@ function showGuest() {
   logoutBtn.hidden = true;
   loginBtn.hidden = false;
   signupBtn.hidden = false;
-  adminPanelLink.hidden = true;
   myBookings.hidden = true;
   lastBookings = [];
   loginBtn.focus();

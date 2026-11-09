@@ -2,6 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const dns = require('dns').promises;
+const net = require('net');
 const { DatabaseSync } = require('node:sqlite');
 
 const PORT = process.env.PORT || 3000;
@@ -92,6 +94,27 @@ if (!reservationColumns.includes('duration')) {
 if (!reservationColumns.includes('reject_reason')) {
   db.exec('ALTER TABLE reservations ADD COLUMN reject_reason TEXT');
 }
+// When the booking was rejected; rejected bookings are deleted 2 minutes later.
+// Bookings rejected before this column existed get "now", so they too go in 2 minutes.
+if (!reservationColumns.includes('rejected_at')) {
+  db.exec(`
+    ALTER TABLE reservations ADD COLUMN rejected_at TEXT;
+    UPDATE reservations SET rejected_at = datetime('now') WHERE reject_reason IS NOT NULL;
+  `);
+}
+
+// The guest has 2 minutes to read the admin's message, then the rejected booking is removed
+const REJECTED_KEEP_MINUTES = 2;
+
+function deleteOldRejected() {
+  db.prepare(`
+    DELETE FROM reservations
+    WHERE reject_reason IS NOT NULL AND rejected_at <= datetime('now', ?)
+  `).run(`-${REJECTED_KEEP_MINUTES} minutes`);
+}
+
+deleteOldRejected();
+setInterval(deleteOldRejected, 30 * 1000);
 
 // Users created before admins existed get the column added (nobody is admin until make-admin is run)
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
@@ -334,6 +357,146 @@ function readRestaurant(body, res) {
   return data;
 }
 
+// ---------- Importing a restaurant from its web page ----------
+
+const IMPORT_TIMEOUT_MS = 8000;
+const IMPORT_MAX_BYTES = 2 * 1024 * 1024;
+const IMPORT_MAX_REDIRECTS = 3;
+
+// The server must not be used to reach the local network (127.0.0.1, 192.168.x.x and so on)
+function isPrivateAddress(ip) {
+  if (net.isIPv6(ip)) {
+    const v4 = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+    if (v4) return isPrivateAddress(v4[1]);
+    const lower = ip.toLowerCase();
+    return lower === '::1' || lower === '::' || /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower);
+  }
+  const [a, b] = ip.split('.').map(Number);
+  return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+}
+
+async function assertPublicUrl(url) {
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('bad-url');
+  const addresses = await dns.lookup(url.hostname, { all: true });
+  if (!addresses.length || addresses.some((a) => isPrivateAddress(a.address))) throw new Error('bad-url');
+}
+
+// Downloads the page's HTML, following a few redirects and checking every address on the way
+async function fetchPage(link) {
+  let url = new URL(link);
+  for (let i = 0; i <= IMPORT_MAX_REDIRECTS; i++) {
+    await assertPublicUrl(url);
+    const response = await fetch(url, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(IMPORT_TIMEOUT_MS),
+      headers: { 'User-Agent': 'TableBook/1.0 (restaurant import)', Accept: 'text/html' },
+    });
+    if (response.status >= 300 && response.status < 400 && response.headers.get('location')) {
+      url = new URL(response.headers.get('location'), url);
+      continue;
+    }
+    if (!response.ok || !/html/i.test(response.headers.get('content-type') || '')) throw new Error('no-page');
+
+    // Read at most IMPORT_MAX_BYTES; restaurant data is near the top of the page anyway
+    const reader = response.body.getReader();
+    const chunks = [];
+    let size = 0;
+    while (size < IMPORT_MAX_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      size += value.length;
+    }
+    reader.cancel().catch(() => {});
+    return { html: Buffer.concat(chunks).toString('utf8'), url };
+  }
+  throw new Error('no-page');
+}
+
+function decodeEntities(text) {
+  const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (m, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (m, dec) => String.fromCodePoint(Number(dec)))
+    .replace(/&(\w+);/g, (m, name) => named[name.toLowerCase()] ?? m);
+}
+
+const cleanText = (value) => decodeEntities(String(value ?? '')).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const firstOf = (value) => (Array.isArray(value) ? value[0] : value);
+
+// The page's <meta> tags (og:title, description, ...) as { name: content }
+function readMetaTags(html) {
+  const meta = {};
+  for (const [tag] of html.matchAll(/<meta\s[^>]*>/gi)) {
+    const attr = (name) => {
+      const m = new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(tag);
+      return m ? (m[2] ?? m[3]) : null;
+    };
+    const key = (attr('property') || attr('name') || '').toLowerCase();
+    const content = attr('content');
+    if (key && content && !(key in meta)) meta[key] = cleanText(content);
+  }
+  return meta;
+}
+
+// Restaurant data that many sites put in <script type="application/ld+json"> (schema.org)
+function readRestaurantJsonLd(html) {
+  const PLACE_TYPES = /Restaurant|FoodEstablishment|CafeOrCoffeeShop|BarOrPub|Bakery|LocalBusiness/i;
+  const found = [];
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(walk);
+    const type = [].concat(node['@type'] || []).join(' ');
+    if (PLACE_TYPES.test(type)) found.push(node);
+    if (node['@graph']) walk(node['@graph']);
+  };
+  for (const [, json] of html.matchAll(/<script[^>]+type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { walk(JSON.parse(json.trim())); } catch (e) { /* broken JSON on the page: skip it */ }
+  }
+  // A Restaurant is a better match than a general LocalBusiness
+  return found.sort((x, y) => /Restaurant/i.test([].concat(y['@type']).join(' ')) - /Restaurant/i.test([].concat(x['@type']).join(' ')))[0] || null;
+}
+
+// Turns the page into the restaurant form's fields; city is the raw place name, the page matches it to a city
+function restaurantFromPage(html, pageUrl) {
+  const meta = readMetaTags(html);
+  const place = readRestaurantJsonLd(html) || {};
+  const address = firstOf(place.address);
+  const titleTag = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+
+  let street = '';
+  let locality = '';
+  if (typeof address === 'string') {
+    street = cleanText(address);
+  } else if (address && typeof address === 'object') {
+    street = cleanText(address.streetAddress);
+    locality = cleanText(address.addressLocality);
+  }
+
+  // schema.org image can be a link or { url }; og:image is the usual fallback
+  const placeImage = firstOf(place.image);
+  const image = cleanText((placeImage && typeof placeImage === 'object' ? placeImage.url : placeImage) || meta['og:image']);
+  let imageUrl = '';
+  try {
+    imageUrl = image ? new URL(image, pageUrl).href.replace(/^http:\/\//, 'https://') : '';
+  } catch (e) { /* not a link: leave the photo empty */ }
+
+  const result = {
+    name: cleanText(place.name || meta['og:site_name'] || meta['og:title'] || (titleTag && titleTag[1])),
+    cuisine: cleanText([].concat(place.servesCuisine || []).join(', ')),
+    address: street || cleanText(meta['restaurant:contact_info:street_address'] || meta['business:contact_data:street_address']),
+    city: locality || cleanText(meta['restaurant:contact_info:locality'] || meta['business:contact_data:locality']),
+    description: cleanText(place.description || meta['og:description'] || meta.description),
+    // The form accepts only https:// photos; a relative link is made absolute
+    imageUrl: /^https:\/\/\S+$/.test(imageUrl) ? imageUrl : '',
+  };
+  for (const [field, limit] of Object.entries(RESTAURANT_LIMITS)) {
+    if (result[field].length > limit) result[field] = result[field].slice(0, limit - 1).trimEnd() + '…';
+  }
+  return result;
+}
+
 // ---------- API ----------
 
 const routes = {
@@ -392,6 +555,29 @@ const routes = {
       WHERE status != 'cancelled' AND table_id IN (SELECT id FROM tables WHERE restaurant_id = ?)
     `).run(id);
     sendJson(res, 200, { ok: true });
+  },
+
+  // Reads a restaurant's web page and returns its data for the admin's form (nothing is saved)
+  'POST /api/admin/restaurants/import': async (req, res) => {
+    if (!requireAdmin(req, res, RESTAURANTS_ADMIN_ONLY)) return;
+    const link = asText((await readJson(req)).url);
+    if (!/^https?:\/\/\S+$/i.test(link) || link.length > 2000) {
+      return sendJson(res, 400, { error: 'Տեղադրեք ճիշտ հղում (https://…)' });
+    }
+
+    let page;
+    try {
+      page = await fetchPage(link);
+    } catch (err) {
+      const badUrl = err.message === 'bad-url' || err.code === 'ENOTFOUND' || err instanceof TypeError && /URL/i.test(err.message);
+      return sendJson(res, 400, { error: badUrl ? 'Հղումը սխալ է' : 'Էջը բացել չհաջողվեց' });
+    }
+
+    const restaurant = restaurantFromPage(page.html, page.url);
+    if (!restaurant.name && !restaurant.description) {
+      return sendJson(res, 422, { error: 'Էջում ռեստորանի տվյալներ չգտնվեցին' });
+    }
+    sendJson(res, 200, { restaurant });
   },
 
   'POST /api/signup': async (req, res) => {
@@ -606,7 +792,7 @@ const routes = {
     if (!reason) return sendJson(res, 400, { error: 'Գրեք մերժման պատճառը' });
     if (reason.length > REJECT_REASON_MAX) return sendJson(res, 400, { error: 'Տեքստը չափազանց երկար է' });
 
-    db.prepare("UPDATE reservations SET status = 'cancelled', reject_reason = ? WHERE id = ?").run(reason, id);
+    db.prepare("UPDATE reservations SET status = 'cancelled', reject_reason = ?, rejected_at = datetime('now') WHERE id = ?").run(reason, id);
     sendJson(res, 200, { reservation: { id, status: 'cancelled', rejectReason: reason } });
   },
 

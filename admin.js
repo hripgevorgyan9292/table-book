@@ -147,6 +147,12 @@ async function loadAdminBookings() {
   } catch (e) {}
 }
 
+// Ցանկը թարմանում է ինքն իրեն. երևում են նոր ամրագրումները, իսկ մերժվածները
+// անհետանում են 2 րոպե հետո, երբ սերվերը ջնջում է դրանք
+setInterval(() => {
+  if (currentUser && currentUser.isAdmin && !document.hidden) loadAdminBookings();
+}, 30 * 1000);
+
 function renderAdminBookings() {
   adminBookingsList.innerHTML = "";
   adminBookingsEmpty.hidden = adminBookings.length > 0;
@@ -322,7 +328,12 @@ function fillCitySelects() {
   fillCitySelect(rCity);
 }
 
-atCity.addEventListener("change", fillTablesRestaurantSelect);
+// Քաղաքը փոխում է և՛ սեղանների ձևի ռեստորանների ցանկը, և՛ ներքևի 9 քարտերը
+atCity.addEventListener("change", () => {
+  fillTablesRestaurantSelect();
+  pickShownRestaurants();
+  renderRestaurants();
+});
 
 // Ռեստորանների ցանկը վերցվում է նույն ցուցակից, որը ադմինը կառավարում է ներքևում՝ ընտրված քաղաքի ռեստորանները
 function fillTablesRestaurantSelect() {
@@ -406,22 +417,71 @@ const RESTAURANT_FIELDS = { name: "rName", city: "rCity", cuisine: "rCuisine", a
 let restaurants = [];
 let editingRestaurant = null;
 
-async function loadRestaurants() {
+// Ինչպես գլխավոր էջում՝ 9 պատահական ռեստորան սեղանների ձևում ընտրված քաղաքից.
+// նորից ընտրվում են բեռնելիս, քաղաքը փոխելիս և ամեն 10 րոպեն մեկ
+const SHOWN_RESTAURANTS = 9;
+const RESTAURANTS_REFRESH_MS = 10 * 60 * 1000;
+let shownRestaurantIds = [];
+
+function pickShownRestaurants() {
+  const list = restaurants.filter((r) => !atCity.value || r.city === atCity.value);
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  shownRestaurantIds = list.slice(0, SHOWN_RESTAURANTS).map((r) => r.id);
+}
+
+// keep՝ պահել ցույց տրվողները (ավելացնելուց, փոխելուց, ջնջելուց հետո), addedId՝ նոր ռեստորանը դնել առաջինը
+async function loadRestaurants({ keep = false, addedId = null } = {}) {
   try {
     const response = await fetch("/api/restaurants");
     if (!response.ok) return;
     restaurants = (await response.json()).restaurants;
     fillCitySelects();
+    if (keep) {
+      if (addedId) shownRestaurantIds = [addedId, ...shownRestaurantIds].slice(0, SHOWN_RESTAURANTS);
+    } else {
+      pickShownRestaurants();
+    }
     renderRestaurants();
     fillTablesRestaurantSelect();
   } catch (e) {}
 }
 
+setInterval(() => {
+  if (currentUser && currentUser.isAdmin) loadRestaurants();
+}, RESTAURANTS_REFRESH_MS);
+
+// ---------- Որոնում ռեստորանների մեջ ----------
+
+const restaurantSearch = document.getElementById("restaurantSearch");
+const restaurantSearchCount = document.getElementById("restaurantSearchCount");
+
+// Որոնումը նայում է անվանմանը, խոհանոցին, հասցեին և քաղաքի անվանը բոլոր լեզուներով
+function searchRestaurants(query) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return restaurants.filter((r) => {
+    const city = CITIES.find((c) => c.key === r.city);
+    const text = [r.name, r.cuisine, r.address, ...(city ? Object.values(city.names) : [])].join(" ").toLowerCase();
+    return words.every((word) => text.includes(word));
+  });
+}
+
+restaurantSearch.addEventListener("input", renderRestaurants);
+
 function renderRestaurants() {
   restaurantGrid.innerHTML = "";
-  restaurantsEmpty.hidden = restaurants.length > 0;
+  const query = restaurantSearch.value.trim();
+  // Որոնելիս երևում են բոլոր գտնվածները, առանց որոնման՝ 9 պատահականները
+  const list = query
+    ? searchRestaurants(query)
+    : shownRestaurantIds.map((id) => restaurants.find((r) => r.id === id)).filter(Boolean);
+  restaurantSearchCount.textContent = query ? t("restaurantSearchFound", { n: list.length }) : "";
+  restaurantsEmpty.hidden = list.length > 0;
+  restaurantsEmpty.textContent = t(query ? "restaurantSearchNone" : restaurants.length ? "noRestaurantsInCity" : "restaurantsEmpty");
 
-  restaurants.forEach((restaurant) => {
+  list.forEach((restaurant) => {
     const card = document.createElement("div");
     card.className = "card photo-card";
 
@@ -508,11 +568,66 @@ function openRestaurantForm(restaurant) {
   });
   // Նոր ռեստորանի քաղաքը՝ սեղանների ձևում ընտրվածը, կամ Երևան
   if (!restaurant) rCity.value = atCity.value || "yerevan";
+  importForm.reset();
+  setImportStatus("importHint");
   restaurantModal.hidden = false;
-  restaurantForm.elements.name.focus();
+  (restaurant ? restaurantForm.elements.name : importForm.elements.url).focus();
 }
 
 addRestaurantBtn.addEventListener("click", () => openRestaurantForm(null));
+
+// ---------- Ռեստորանի տվյալները՝ նրա էջի հղումով ----------
+
+const importForm = document.getElementById("importForm");
+const importStatus = document.getElementById("importStatus");
+
+function setImportStatus(key, { text = null, kind = "" } = {}) {
+  importStatus.textContent = text ?? t(key);
+  importStatus.className = "import-status" + (kind ? " " + kind : "");
+}
+
+// Էջի տեղանքը («Gyumri», «Գյումրի», «Гюмри», ...) համեմատվում է քաղաքների անուններին բոլոր լեզուներով
+function matchCity(...texts) {
+  const haystack = texts.join(" ").toLowerCase();
+  if (!haystack.trim()) return "";
+  const city = CITIES.find((c) => Object.values(c.names).some((name) => haystack.includes(name.replace(/\s*\(.*\)$/, "").toLowerCase())));
+  return city ? city.key : "";
+}
+
+importForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const url = importForm.elements.url.value.trim();
+  if (!/^https?:\/\/\S+$/i.test(url)) {
+    setImportStatus("errImportUrl", { kind: "error" });
+    return;
+  }
+
+  const btn = importForm.querySelector(".search-btn");
+  btn.disabled = true;
+  setImportStatus("importLoading");
+  try {
+    const { ok, result } = await postJson("/api/admin/restaurants/import", { url });
+    if (!ok) {
+      setImportStatus(null, { text: translateServer(result.error), kind: "error" });
+      return;
+    }
+    // Լցնել միայն այն դաշտերը, որոնք գտնվել են էջում. մնացածը մնում են ինչպես կային
+    const found = result.restaurant;
+    ["name", "cuisine", "address", "description", "imageUrl"].forEach((field) => {
+      if (found[field]) {
+        restaurantForm.elements[field].value = found[field];
+        showError(RESTAURANT_FIELDS[field], "");
+      }
+    });
+    const city = matchCity(found.city, found.address);
+    if (city) rCity.value = city;
+    setImportStatus(city || !found.city ? "importDone" : "importDoneNoCity", { kind: "success" });
+  } catch (e) {
+    setImportStatus("networkError", { kind: "error" });
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 restaurantForm.addEventListener("input", (event) => showError(event.target.id, ""));
 
@@ -540,7 +655,7 @@ restaurantForm.addEventListener("submit", async (event) => {
 
     closeRestaurantForm();
     showToast(t("restaurantSaved"));
-    loadRestaurants();
+    loadRestaurants({ keep: true, addedId: editingRestaurant ? null : result.restaurant.id });
   } catch (e) {
     showToast(t("networkError"));
   } finally {
@@ -555,7 +670,7 @@ async function deleteRestaurant(restaurant, btn) {
   try {
     const { ok, result } = await postJson("/api/restaurants/delete", { id: restaurant.id });
     showToast(ok ? t("restaurantDeleted") : translateServer(result.error));
-    loadRestaurants();
+    loadRestaurants({ keep: true });
     // Ջնջված ռեստորանի ամրագրումները չեղարկվում են, թարմացնել ցուցակը
     loadAdminBookings();
   } catch (e) {

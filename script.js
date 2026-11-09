@@ -614,9 +614,9 @@ function renderMyBookings() {
   myBookingsList.innerHTML = "";
   myBookingsEmpty.hidden = lastBookings.length > 0;
 
-  // Վերևի ամփոփումը՝ քանի ամրագրում կա ամեն վիճակում
+  // Կոճակի վրա միայն սպասող ամրագրումների քանակն է. հաստատվածներն ու մերժվածները երևում են պատուհանում
   myBookingsSummary.innerHTML = "";
-  ["pending", "confirmed", "rejected"].forEach((state) => {
+  ["pending"].forEach((state) => {
     const count = lastBookings.filter((b) => bookingState(b) === state).length;
     if (!count) return;
     const chip = document.createElement("span");

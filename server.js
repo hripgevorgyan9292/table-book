@@ -406,6 +406,16 @@ function notify(audience, userId, type, params) {
     .run(audience, userId, type, JSON.stringify(params));
 }
 
+// Notifications are deleted 48 hours after they were sent (read or not)
+const NOTIFICATION_KEEP_HOURS = 48;
+
+function deleteOldNotifications() {
+  db.prepare("DELETE FROM notifications WHERE created_at <= datetime('now', ?)").run(`-${NOTIFICATION_KEEP_HOURS} hours`);
+}
+
+deleteOldNotifications();
+setInterval(deleteOldNotifications, 10 * 60 * 1000);
+
 // What a notification about a booking mentions: restaurant, table, day and time, guest
 function bookingInfo(reservationId) {
   const r = db.prepare(`
@@ -1272,6 +1282,8 @@ const routes = {
 
 // The last 30 notifications and how many are unread
 function notificationsFor(audience, userId) {
+  // Older than 48 hours are removed first, so they never show even between the cleanups
+  deleteOldNotifications();
   const rows = audience === 'admin'
     ? db.prepare("SELECT * FROM notifications WHERE audience = 'admin' ORDER BY id DESC LIMIT 30").all()
     : db.prepare("SELECT * FROM notifications WHERE audience = 'user' AND user_id = ? ORDER BY id DESC LIMIT 30").all(userId);

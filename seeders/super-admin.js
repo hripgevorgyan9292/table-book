@@ -47,7 +47,7 @@ if (existing) {
 
   // New password; the old one stops working and open logins are closed
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), existing.id);
-  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(existing.id);
+  db.prepare('DELETE FROM refresh_tokens WHERE user_id = ?').run(existing.id);
   console.log('Super Admin password reset.');
   console.log(`  Email:    ${EMAIL}`);
   console.log(`  Password: ${password}`);

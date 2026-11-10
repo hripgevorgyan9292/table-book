@@ -381,26 +381,15 @@ rejectForm.addEventListener("submit", async (event) => {
 
 const atForm = document.getElementById("adminTablesForm");
 const atRestaurant = document.getElementById("atRestaurant");
-const atDate = document.getElementById("atDate");
-const atTime = document.getElementById("atTime");
 const adminTablesGrid = document.getElementById("adminTablesGrid");
 const adminTablesSummary = document.getElementById("adminTablesSummary");
 let adminTables = [];
 
-// Ժամեր՝ 10:00-ից 22:00, ամեն 30 րոպեն մեկ (նույնը, ինչ հյուրերի ամրագրման ձևում)
-for (let h = 10; h <= 22; h++) {
-  ["00", "30"].forEach((m) => {
-    if (h === 22 && m === "30") return;
-    const time = String(h).padStart(2, "0") + ":" + m;
-    atTime.add(new Option(time, time));
-  });
-}
-// Լռելյայն՝ «All day» (ամբողջ օրվա ամրագրումները)
-atTime.value = "";
-atDate.value = (() => {
+// Սեղանների վիճակը միշտ այսօրվա համար է՝ ամբողջ օրով
+function todayDate() {
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-})();
+}
 
 const atCity = document.getElementById("atCity");
 const rCity = document.getElementById("rCity");
@@ -432,14 +421,14 @@ function fillTablesRestaurantSelect() {
 }
 
 async function loadAdminTables() {
-  if (!atRestaurant.value || !atDate.value) {
+  if (!atRestaurant.value) {
     adminTables = [];
     renderAdminTables();
     return;
   }
   try {
     const response = await fetch("/api/admin/tables?restaurantId=" + atRestaurant.value +
-      "&date=" + encodeURIComponent(atDate.value) + (atTime.value ? "&time=" + encodeURIComponent(atTime.value) : ""));
+      "&date=" + encodeURIComponent(todayDate()));
     const result = await response.json();
     if (!response.ok) {
       adminTables = [];
@@ -457,7 +446,7 @@ async function loadAdminTables() {
 function renderAdminTables() {
   adminTablesGrid.innerHTML = "";
   const busy = adminTables.filter((table) => !table.free).length;
-  const allDay = !atTime.value;
+  const allDay = true;
   if (!adminTables.length) adminTablesSummary.textContent = "";
   else if (allDay) adminTablesSummary.textContent = t("adminTablesSummaryDay", { busy, total: adminTables.length });
   else adminTablesSummary.textContent = t("adminTablesSummary", { free: adminTables.length - busy, busy });

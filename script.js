@@ -212,6 +212,8 @@ function showUser(user) {
   signupBtn.hidden = true;
   myBookings.hidden = false;
   loadMyBookings();
+  bell.show(true);
+  bell.load();
 }
 
 function showGuest() {
@@ -221,6 +223,7 @@ function showGuest() {
   signupBtn.hidden = false;
   myBookings.hidden = true;
   lastBookings = [];
+  bell.show(false);
   loginBtn.focus();
 }
 
@@ -229,6 +232,22 @@ function showToast(message) {
   toast.hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { toast.hidden = true; }, 4000);
+}
+
+// 🔔 Ծանուցումներ՝ ադմինի հաստատում (գումարը գանձվեց), մերժում (գումարը վերադարձվեց), 15 րոպեն անցավ
+const bell = createNotificationBell({
+  listUrl: "/api/notifications",
+  readUrl: "/api/notifications/read",
+  onNew: (text) => {
+    showToast(text);
+    loadMyBookings();
+  },
+});
+
+// Վճարման էջից վերադառնալիս (?paid=1)՝ հաղորդագրություն, որ գումարը սառեցված է
+if (new URLSearchParams(location.search).get("paid") === "1") {
+  setTimeout(() => showToast(t("paidToast")), 300);
+  history.replaceState(null, "", location.pathname);
 }
 
 // Էջը բացելիս սերվերից ստուգել՝ արդյոք օգտատերը մուտք է գործած
@@ -576,12 +595,17 @@ bookBtn.addEventListener("click", async () => {
     }
 
     const r = result.reservation;
-    showToast(t("booked", {
-      restaurant: r.restaurantName, n: r.tableNumber, date: formatDate(r.date), time: timeRange(r.time, r.duration),
-    }));
     // Պատվերն ուղարկվեց ամրագրման հետ, զամբյուղը դատարկվում է
     delete carts[lastSearch.restaurantId];
     renderOrderPanel();
+    // Կանխավճարը վճարվում է թեստային վճարման էջում՝ 15 րոպեի ընթացքում
+    if (result.payment) {
+      location.href = "pay.html?id=" + result.payment.id;
+      return;
+    }
+    showToast(t("booked", {
+      restaurant: r.restaurantName, n: r.tableNumber, date: formatDate(r.date), time: timeRange(r.time, r.duration),
+    }));
     searchTables();
     loadMyBookings();
   } catch (e) {
@@ -652,7 +676,10 @@ async function loadMyBookings() {
 
 // Ադմինի պատասխանը երևում է առանց էջը թարմացնելու
 setInterval(() => {
-  if (!myBookings.hidden && !document.hidden) loadMyBookings();
+  if (!myBookings.hidden && !document.hidden) {
+    loadMyBookings();
+    bell.load();
+  }
 }, 30000);
 
 function renderMyBookings() {
@@ -714,7 +741,16 @@ function renderMyBookings() {
     item.append(top, details);
     const order = orderLine(booking.order, "p");
     if (order) item.appendChild(order);
+    const payment = paymentLine(booking.payment);
+    if (payment) item.appendChild(payment);
     item.appendChild(message);
+    if (booking.payment && booking.payment.status === "awaiting" && booking.status !== "cancelled") {
+      const payBtn = document.createElement("a");
+      payBtn.className = "search-btn pay-now-btn";
+      payBtn.href = "pay.html?id=" + booking.payment.id;
+      payBtn.textContent = t("payNow", { amount: formatPrice(booking.payment.amount) });
+      item.appendChild(payBtn);
+    }
 
     const isPast = new Date(booking.date + "T" + booking.time) < new Date();
     if (booking.canCancel) {
@@ -743,7 +779,8 @@ async function cancelBooking(booking, btn) {
   btn.disabled = true;
   try {
     const { ok, result } = await postJson("/api/reservations/cancel", { id: booking.id });
-    showToast(ok ? t("cancelled") : translateServer(result.error));
+    if (ok && result.returned) showToast(t("cancelledReturned", { amount: formatPrice(result.returned) }));
+    else showToast(ok ? t("cancelled") : translateServer(result.error));
     loadMyBookings();
     // Չեղարկված սեղանը նորից ազատ է, թարմացնել հատակագիծը
     if (ok) searchTables();
@@ -1089,6 +1126,7 @@ function applyLanguage() {
   renderRestaurants();
   renderMenu();
   renderOrderPanel();
+  bell.render();
 
   // Վերագծել սխեման նոր լեզվով՝ պահելով ընտրված սեղանը
   if (lastTables && lastSearch) {

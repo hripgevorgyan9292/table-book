@@ -33,6 +33,72 @@ const TRANSLATIONS = {
 
     bookingTitle: "Ռեստորանի ամրագրում",
     guideTitle: "Ուղեցույց",
+    payPageTitle: "TableBook — կանխավճարի վճարում",
+    payTitle: "Ամրագրման կանխավճար",
+    factTable: "Սեղան",
+    factWhen: "Երբ",
+    payDeposit: "Կանխավճար",
+    cardNumber: "Քարտի համար",
+    cardExpiry: "Ժամկետ (ԱԱ/ՏՏ)",
+    cardCvc: "Անվտանգության կոդ",
+    cardName: "Քարտատիրոջ անուն",
+    payButton: "Վճարել {amount}",
+    payHoldNote: "Գումարը սառեցվում է քարտի վրա և գանձվում է միայն ռեստորանի հաստատումից հետո։",
+    payTestCards: "Թեստային քարտեր",
+    payDeclinedCard: "միշտ մերժվում է",
+    payTestCardsHint: "Ժամկետը՝ ցանկացած ապագա ամիս, կոդը՝ ցանկացած 3 թվանշան։",
+    payBackToSite: "Վերադառնալ կայք",
+    payTimeLeft: "Վճարելու համար մնացել է՝ {time}",
+    payDoneTitle: "Վճարումը հաջողվեց",
+    payDoneText: "{amount}-ը սառեցված է {card} •••• {last4} քարտի վրա։ Այն կգանձվի ռեստորանի հաստատումից հետո, և դուք ծանուցում կստանաք։",
+    payExpiredTitle: "Վճարման ժամկետն անցել է",
+    payExpiredText: "15 րոպեի ընթացքում վճարում չեղավ, և ամրագրումը չեղարկվեց։ Կարող եք ամրագրել նորից։",
+    payAlreadyTitle: "Արդեն վճարված է",
+    payAlreadyText: "Այս ամրագրման կանխավճարն արդեն վճարված է։",
+    payLoginTitle: "Մուտք գործեք",
+    payLoginText: "Վճարելու համար մուտք գործեք այն հաշվով, որով ամրագրել եք։",
+    payMissingTitle: "Վճարումը չի գտնվել",
+    payMissingText: "Այդպիսի վճարում չկա։ Բացեք այն «Իմ ամրագրումները» բաժնից։",
+    payLocalTitle: "Միայն թեստային ռեժիմում",
+    payLocalText: "Թեստային վճարումը աշխատում է միայն localhost:3000-ում։",
+    panelDeposit: "Ամրագրելու համար 15 րոպեի ընթացքում վճարեք 5 000 ֏ կանխավճար։ Մնացածը վճարվում է ռեստորանում՝ ճաշից հետո։",
+    bookAndPay: "Ամրագրել և վճարել կանխավճարը",
+    paidToast: "Կանխավճարը սառեցված է քարտի վրա։ Այն կգանձվի ռեստորանի հաստատումից հետո։",
+    cancelledReturned: "Ամրագրումը չեղարկվեց, {amount}-ը վերադարձվեց քարտին։",
+    payNow: "Վճարել {amount}",
+    payStatus_awaiting: "Սպասում է վճարման՝ 15 րոպեի ընթացքում",
+    payStatus_held: "{amount}-ը սառեցված է {card} •••• {last4} քարտի վրա",
+    payStatus_captured: "{amount} կանխավճարը գանձված է",
+    payStatus_released: "{amount}-ը վերադարձվել է քարտին",
+    payStatus_refunded: "{amount}-ը վերադարձվել է քարտին",
+    payStatus_expired: "Չվճարվեց 15 րոպեում",
+    payStatus_void: "Չեղարկվել է մինչև վճարումը",
+    notifTitle: "Ծանուցումներ",
+    notifEmpty: "Ծանուցումներ դեռ չկան։",
+    notif_bookingExpired: "{restaurant}, սեղան {table}, {date} {time}․ ամրագրումը չեղարկվեց, որովհետև 15 րոպեում չվճարվեց։",
+    notif_paymentCaptured: "{restaurant}-ը հաստատեց ամրագրումը ({date} {time})․ {amount} կանխավճարը գանձվեց քարտից։",
+    notif_depositReturnedReject: "{restaurant}-ը մերժեց ամրագրումը ({date} {time})․ {amount}-ը վերադարձվեց քարտին։",
+    notif_guestCancelled: "{guest}-ը չեղարկեց ամրագրումը՝ {restaurant}, սեղան {table}, {date} {time}․ վերադարձվեց {amount}։",
+    notif_paymentHeld: "{guest}-ը վճարեց {amount} կանխավճարը ({card})՝ {restaurant}, սեղան {table}, {date} {time}։ Գումարը սառեցված է մինչև հաստատումը։",
+    notif_paymentHeldGuest: "{restaurant}, սեղան {table}, {date} {time}․ {amount} կանխավճարն արգելափակված է {card} •••• {last4} քարտի վրա և կգանձվի ռեստորանի հաստատումից հետո։",
+    payRulesTitle: "Վճարման կարգը",
+    payRule1: "Ամրագրումը հաստատելու համար անհրաժեշտ է վճարել 5 000 ՀՀ դրամ կանխավճար։ Պատվերի մնացած գումարը վճարվում է ռեստորանում՝ սպասարկման ավարտին։",
+    payRule2: "Կանխավճարը անհրաժեշտ է վճարել ամրագրումից հետո 15 րոպեի ընթացքում։ Նշված ժամկետում վճարում չկատարվելու դեպքում ամրագրումն ինքնաշխատ չեղարկվում է։",
+    payRule3: "Վճարումն ընդունվում է Visa, Mastercard, ArCa, Mir վճարային համակարգերի քարտերով։",
+    payRule4: "Վճարման պահին կանխավճարի գումարն արգելափակվում է քարտի վրա և գանձվում է միայն ռեստորանի կողմից ամրագրումը հաստատվելուց հետո։ Գանձման մասին Դուք կստանաք ծանուցում։",
+    payRule5: "Դուք կարող եք չեղարկել ամրագրումը ոչ ուշ, քան ամրագրված ժամից 1 ժամ առաջ։ Այդ դեպքում կանխավճարն անմիջապես վերադարձվում է քարտին, իսկ ռեստորանը ստանում է ծանուցում։",
+    payRule6: "Ռեստորանի կողմից ամրագրումը մերժվելու դեպքում կանխավճարն անմիջապես վերադարձվում է քարտին։",
+    confirmNeedsPayment: "Հյուրը դեռ չի վճարել կանխավճարը",
+    errNotPaid: "Ամրագրումը դեռ վճարված չէ",
+    errLocalOnly: "Թեստային վճարումը աշխատում է միայն localhost-ում",
+    errNoPayment: "Այդպիսի վճարում չկա",
+    errPayExpired: "Վճարման 15 րոպեն անցել է, ամրագրումը չեղարկվել է",
+    errAlreadyPaid: "Այս ամրագրումն արդեն վճարված է",
+    errCardNumber: "Քարտի համարը սխալ է",
+    errCardExpiry: "Ժամկետը սխալ է կամ անցել է",
+    errCardCvc: "Գրեք քարտի 3 կամ 4 նիշանոց կոդը",
+    errCardName: "Գրեք քարտատիրոջ անունը",
+    errCardDeclined: "Քարտը մերժվեց, փորձեք այլ քարտ",
     hallTab: "Սրահ",
     chooseRestaurant: "Ընտրեք ռեստորանը ցուցակից։",
     restaurantListAll: "Բոլոր ռեստորանները",
@@ -322,6 +388,72 @@ const TRANSLATIONS = {
 
     bookingTitle: "Бронирование ресторана",
     guideTitle: "Руководство",
+    payPageTitle: "TableBook — оплата депозита",
+    payTitle: "Депозит за бронирование",
+    factTable: "Столик",
+    factWhen: "Когда",
+    payDeposit: "Депозит",
+    cardNumber: "Номер карты",
+    cardExpiry: "Срок (ММ/ГГ)",
+    cardCvc: "Код безопасности",
+    cardName: "Имя владельца",
+    payButton: "Оплатить {amount}",
+    payHoldNote: "Сумма блокируется на карте и списывается только после подтверждения ресторана.",
+    payTestCards: "Тестовые карты",
+    payDeclinedCard: "всегда отклоняется",
+    payTestCardsHint: "Срок — любой будущий месяц, код — любые 3 цифры.",
+    payBackToSite: "Вернуться на сайт",
+    payTimeLeft: "На оплату осталось: {time}",
+    payDoneTitle: "Оплата прошла",
+    payDoneText: "{amount} заблокировано на карте {card} •••• {last4}. Сумма спишется после подтверждения ресторана, вы получите уведомление.",
+    payExpiredTitle: "Время на оплату истекло",
+    payExpiredText: "Оплаты не было в течение 15 минут, бронирование отменено. Можно забронировать заново.",
+    payAlreadyTitle: "Уже оплачено",
+    payAlreadyText: "Депозит за это бронирование уже оплачен.",
+    payLoginTitle: "Войдите",
+    payLoginText: "Чтобы оплатить, войдите в аккаунт, с которого бронировали.",
+    payMissingTitle: "Оплата не найдена",
+    payMissingText: "Такой оплаты нет. Откройте её из раздела «Мои бронирования».",
+    payLocalTitle: "Только в тестовом режиме",
+    payLocalText: "Тестовая оплата работает только на localhost:3000.",
+    panelDeposit: "Чтобы забронировать, оплатите депозит 5 000 ֏ в течение 15 минут. Остальное оплачивается в ресторане после ужина.",
+    bookAndPay: "Забронировать и оплатить депозит",
+    paidToast: "Депозит заблокирован на карте. Он спишется после подтверждения ресторана.",
+    cancelledReturned: "Бронирование отменено, {amount} возвращено на карту.",
+    payNow: "Оплатить {amount}",
+    payStatus_awaiting: "Ожидает оплаты в течение 15 минут",
+    payStatus_held: "{amount} заблокировано на карте {card} •••• {last4}",
+    payStatus_captured: "Депозит {amount} списан",
+    payStatus_released: "{amount} возвращено на карту",
+    payStatus_refunded: "{amount} возвращено на карту",
+    payStatus_expired: "Не оплачено за 15 минут",
+    payStatus_void: "Отменено до оплаты",
+    notifTitle: "Уведомления",
+    notifEmpty: "Уведомлений пока нет.",
+    notif_bookingExpired: "{restaurant}, столик {table}, {date} {time}: бронирование отменено — не оплачено за 15 минут.",
+    notif_paymentCaptured: "{restaurant} подтвердил бронирование ({date} {time}): депозит {amount} списан с карты.",
+    notif_depositReturnedReject: "{restaurant} отклонил бронирование ({date} {time}): {amount} возвращено на карту.",
+    notif_guestCancelled: "{guest} отменил бронирование: {restaurant}, столик {table}, {date} {time}. Возвращено {amount}.",
+    notif_paymentHeld: "{guest} оплатил депозит {amount} ({card}): {restaurant}, столик {table}, {date} {time}. Сумма заблокирована до подтверждения.",
+    notif_paymentHeldGuest: "{restaurant}, столик {table}, {date} {time}: депозит {amount} заблокирован на карте {card} •••• {last4} и будет списан после подтверждения ресторана.",
+    payRulesTitle: "Порядок оплаты",
+    payRule1: "Для подтверждения бронирования необходимо внести депозит в размере 5 000 драмов. Оставшаяся сумма заказа оплачивается в ресторане по окончании обслуживания.",
+    payRule2: "Депозит необходимо внести в течение 15 минут после бронирования. Если оплата не поступила в указанный срок, бронирование отменяется автоматически.",
+    payRule3: "Оплата принимается картами платёжных систем Visa, Mastercard, ArCa, «Мир».",
+    payRule4: "При оплате сумма депозита блокируется на карте и списывается только после подтверждения бронирования рестораном. О списании Вы получите уведомление.",
+    payRule5: "Вы можете отменить бронирование не позднее чем за 1 час до назначенного времени. В этом случае депозит незамедлительно возвращается на карту, а ресторан получает уведомление.",
+    payRule6: "Если ресторан отклоняет бронирование, депозит незамедлительно возвращается на карту.",
+    confirmNeedsPayment: "Гость ещё не оплатил депозит",
+    errNotPaid: "Бронирование ещё не оплачено",
+    errLocalOnly: "Тестовая оплата работает только на localhost",
+    errNoPayment: "Такой оплаты нет",
+    errPayExpired: "15 минут на оплату истекли, бронирование отменено",
+    errAlreadyPaid: "Это бронирование уже оплачено",
+    errCardNumber: "Неверный номер карты",
+    errCardExpiry: "Неверный или истёкший срок",
+    errCardCvc: "Введите 3- или 4-значный код карты",
+    errCardName: "Введите имя владельца карты",
+    errCardDeclined: "Карта отклонена, попробуйте другую",
     hallTab: "Зал",
     chooseRestaurant: "Выберите ресторан из списка.",
     restaurantListAll: "Все рестораны",
@@ -612,6 +744,72 @@ const TRANSLATIONS = {
 
     bookingTitle: "Restaurant booking",
     guideTitle: "Guide",
+    payPageTitle: "TableBook — deposit payment",
+    payTitle: "Booking deposit",
+    factTable: "Table",
+    factWhen: "When",
+    payDeposit: "Deposit",
+    cardNumber: "Card number",
+    cardExpiry: "Expiry (MM/YY)",
+    cardCvc: "Security code",
+    cardName: "Name on card",
+    payButton: "Pay {amount}",
+    payHoldNote: "The amount is held on your card and charged only after the restaurant confirms the booking.",
+    payTestCards: "Test cards",
+    payDeclinedCard: "always declined",
+    payTestCardsHint: "Any future expiry month and any 3-digit code.",
+    payBackToSite: "Back to the site",
+    payTimeLeft: "Time left to pay: {time}",
+    payDoneTitle: "Payment successful",
+    payDoneText: "{amount} is held on your {card} •••• {last4} card. It will be charged after the restaurant confirms, and you will get a notification.",
+    payExpiredTitle: "Payment time is over",
+    payExpiredText: "No payment was made within 15 minutes, so the booking was cancelled. You can book again.",
+    payAlreadyTitle: "Already paid",
+    payAlreadyText: "The deposit for this booking has already been paid.",
+    payLoginTitle: "Please log in",
+    payLoginText: "Log in with the account you booked with to pay.",
+    payMissingTitle: "Payment not found",
+    payMissingText: "There is no such payment. Open it from My bookings.",
+    payLocalTitle: "Test mode only",
+    payLocalText: "Test payments work only on localhost:3000.",
+    panelDeposit: "To book, pay a 5 000 ֏ deposit within 15 minutes. The rest is paid at the restaurant after the meal.",
+    bookAndPay: "Book and pay the deposit",
+    paidToast: "The deposit is held on your card. It will be charged after the restaurant confirms.",
+    cancelledReturned: "Booking cancelled, {amount} returned to your card.",
+    payNow: "Pay {amount}",
+    payStatus_awaiting: "Waiting for payment within 15 minutes",
+    payStatus_held: "{amount} held on {card} •••• {last4}",
+    payStatus_captured: "{amount} deposit charged",
+    payStatus_released: "{amount} returned to the card",
+    payStatus_refunded: "{amount} returned to the card",
+    payStatus_expired: "Not paid within 15 minutes",
+    payStatus_void: "Cancelled before payment",
+    notifTitle: "Notifications",
+    notifEmpty: "No notifications yet.",
+    notif_bookingExpired: "{restaurant}, table {table}, {date} {time}: the booking was cancelled because it wasn't paid within 15 minutes.",
+    notif_paymentCaptured: "{restaurant} confirmed your booking ({date} {time}): the {amount} deposit was charged to your card.",
+    notif_depositReturnedReject: "{restaurant} rejected your booking ({date} {time}): {amount} was returned to your card.",
+    notif_guestCancelled: "{guest} cancelled a booking: {restaurant}, table {table}, {date} {time}. Returned: {amount}.",
+    notif_paymentHeld: "{guest} paid the {amount} deposit ({card}): {restaurant}, table {table}, {date} {time}. The amount is held until you confirm.",
+    notif_paymentHeldGuest: "{restaurant}, table {table}, {date} {time}: the {amount} deposit is held on your {card} •••• {last4} card and will be charged after the restaurant confirms.",
+    payRulesTitle: "Payment rules",
+    payRule1: "To secure a booking, a deposit of AMD 5,000 must be paid. The remaining amount is paid at the restaurant at the end of the visit.",
+    payRule2: "The deposit must be paid within 15 minutes of booking. If payment is not received within this time, the booking is cancelled automatically.",
+    payRule3: "Payment is accepted by Visa, Mastercard, ArCa and Mir cards.",
+    payRule4: "At payment, the deposit is held on the card and charged only after the restaurant confirms the booking. You will be notified when the charge is made.",
+    payRule5: "You may cancel the booking no later than 1 hour before the booked time. In this case the deposit is returned to the card immediately and the restaurant is notified.",
+    payRule6: "If the restaurant rejects the booking, the deposit is returned to the card immediately.",
+    confirmNeedsPayment: "The guest hasn't paid the deposit yet",
+    errNotPaid: "The booking isn't paid yet",
+    errLocalOnly: "Test payments work only on localhost",
+    errNoPayment: "There is no such payment",
+    errPayExpired: "The 15 minutes to pay are over, the booking was cancelled",
+    errAlreadyPaid: "This booking is already paid",
+    errCardNumber: "The card number is not valid",
+    errCardExpiry: "The expiry date is wrong or has passed",
+    errCardCvc: "Enter the card's 3- or 4-digit code",
+    errCardName: "Enter the cardholder's name",
+    errCardDeclined: "The card was declined, try another card",
     hallTab: "Floor plan",
     chooseRestaurant: "Choose a restaurant from the list.",
     restaurantListAll: "All restaurants",
@@ -960,6 +1158,112 @@ function dishThumb(dish) {
   return thumb;
 }
 
+// ---------- Ծանուցումներ (🔔)՝ ընդհանուր գլխավոր և ադմին էջերի համար ----------
+
+// Ծանուցման տեքստը ընտրված լեզվով՝ նրա տեսակից և տվյալներից (ռեստորան, սեղան, օր, ժամ, գումար)
+function notificationText(notification) {
+  const p = notification.params || {};
+  const vars = { ...p, amount: formatPrice(p.amount || 0) };
+  if (p.date) {
+    const [, month, day] = p.date.split("-").map(Number);
+    vars.date = t("formatDate", { day, month: month - 1 });
+  }
+  return t("notif_" + notification.type, vars);
+}
+
+// Զանգակը վերևի ժապավենում. ցույց է տալիս չկարդացածների քանակը, բացելիս՝ ցուցակը,
+// իսկ նոր ծանուցում գալիս՝ նաև հաղորդագրություն (onNew)
+function createNotificationBell({ listUrl, readUrl, onNew }) {
+  const wrap = document.getElementById("notif");
+  const button = document.getElementById("notifBtn");
+  const count = document.getElementById("notifCount");
+  const panel = document.getElementById("notifPanel");
+  const list = document.getElementById("notifList");
+  const empty = document.getElementById("notifEmpty");
+  let items = [];
+  let lastId = null;
+
+  function render() {
+    const unread = items.filter((n) => !n.read).length;
+    count.hidden = unread === 0;
+    count.textContent = unread > 9 ? "9+" : unread;
+    button.setAttribute("aria-label", t("notifTitle") + (unread ? " (" + unread + ")" : ""));
+    empty.hidden = items.length > 0;
+    list.innerHTML = "";
+    items.forEach((n) => {
+      const item = document.createElement("li");
+      item.className = "notif-item" + (n.read ? "" : " unread");
+      const text = document.createElement("span");
+      text.textContent = notificationText(n);
+      const time = document.createElement("time");
+      const at = new Date(n.createdAt);
+      time.textContent = at.toLocaleDateString(currentLang) + " " + at.toTimeString().slice(0, 5);
+      item.append(text, time);
+      list.appendChild(item);
+    });
+  }
+
+  async function load() {
+    try {
+      const response = await fetch(listUrl);
+      if (!response.ok) return;
+      items = (await response.json()).notifications;
+      const newest = items[0];
+      // Նոր ծանուցում է եկել էջը բաց լինելու ժամանակ
+      if (lastId !== null && newest && newest.id > lastId && !newest.read && onNew) onNew(notificationText(newest));
+      lastId = newest ? newest.id : 0;
+      render();
+    } catch (e) {}
+  }
+
+  // Բացելիս բոլորը նշվում են կարդացած
+  async function markRead() {
+    if (!items.some((n) => !n.read)) return;
+    try {
+      await fetch(readUrl, { method: "POST" });
+      items = items.map((n) => ({ ...n, read: true }));
+      count.hidden = true;
+    } catch (e) {}
+  }
+
+  button.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+    button.setAttribute("aria-expanded", String(!panel.hidden));
+    if (!panel.hidden) markRead();
+    else render();
+  });
+  document.addEventListener("click", (event) => {
+    if (!panel.hidden && !wrap.contains(event.target)) {
+      panel.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      render();
+    }
+  });
+
+  return {
+    load,
+    render,
+    show(visible) {
+      wrap.hidden = !visible;
+      if (!visible) {
+        panel.hidden = true;
+        items = [];
+        lastId = null;
+      }
+    },
+  };
+}
+
+// Ամրագրման կանխավճարի վիճակը մեկ տողով (գլխավոր և ադմին էջերի համար)
+function paymentLine(payment) {
+  if (!payment) return null;
+  const line = document.createElement("span");
+  line.className = "payment-line " + payment.status;
+  const vars = { amount: formatPrice(payment.amount), card: payment.cardBrand, last4: payment.cardLast4 };
+  line.textContent = "💳 " + t("payStatus_" + payment.status, vars);
+  return line;
+}
+
 // Ամրագրման հետ պատվիրված ուտեստները մեկ տողով՝ «🍽 Dolma × 2, Gata × 1 · 8 200 ֏»
 function orderLine(order, tag = "span") {
   if (!order || !order.length) return null;
@@ -1054,6 +1358,16 @@ const SERVER_MESSAGES = {
   "Ամրագրումը պետք է ավարտվի մինչև 23:00": "errClosing",
   "Գրեք ռեստորանի անվանումը": "errName",
   "Ընտրեք քաղաքը": "errCity",
+  "Ամրագրումը դեռ վճարված չէ": "errNotPaid",
+  "Թեստային վճարումը աշխատում է միայն localhost-ում": "errLocalOnly",
+  "Այդպիսի վճարում չկա": "errNoPayment",
+  "Վճարման 15 րոպեն անցել է, ամրագրումը չեղարկվել է": "errPayExpired",
+  "Այս ամրագրումն արդեն վճարված է": "errAlreadyPaid",
+  "Քարտի համարը սխալ է": "errCardNumber",
+  "Ժամկետը սխալ է կամ անցել է": "errCardExpiry",
+  "Գրեք քարտի 3 կամ 4 նիշանոց կոդը": "errCardCvc",
+  "Գրեք քարտատիրոջ անունը": "errCardName",
+  "Քարտը մերժվեց. փորձեք այլ քարտ": "errCardDeclined",
   "Պատվերը սխալ է": "errOrder",
   "Ճաշացանկում այդպիսի ուտեստ չկա": "errOrderDish",
   "Ընտրեք բաժինը": "errCategory",

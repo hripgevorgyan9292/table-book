@@ -106,6 +106,37 @@ db.exec(`
     qty            INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS reservation_items_reservation ON reservation_items (reservation_id);
+
+  -- The booking deposit (test payments only). awaiting: not paid yet (15 minutes); held: paid, the money
+  -- is held on the card; captured: charged after the admin confirmed; released / refunded: returned to
+  -- the card (before / after it was charged); expired: not paid in time; void: cancelled before paying
+  CREATE TABLE IF NOT EXISTS payments (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    reservation_id INTEGER NOT NULL UNIQUE REFERENCES reservations(id) ON DELETE CASCADE,
+    amount         INTEGER NOT NULL,
+    status         TEXT NOT NULL DEFAULT 'awaiting'
+                   CHECK (status IN ('awaiting', 'held', 'captured', 'released', 'refunded', 'expired', 'void')),
+    card_brand     TEXT NOT NULL DEFAULT '',
+    card_last4     TEXT NOT NULL DEFAULT '',
+    created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at     TEXT NOT NULL,
+    paid_at        TEXT,
+    captured_at    TEXT,
+    returned_at    TEXT
+  );
+
+  -- Messages for guests (audience 'user') and for the admin page (audience 'admin'). The text is built
+  -- on the page from the type and its params, so it shows in the chosen language
+  CREATE TABLE IF NOT EXISTS notifications (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    audience   TEXT NOT NULL CHECK (audience IN ('user', 'admin')),
+    user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type       TEXT NOT NULL,
+    params     TEXT NOT NULL DEFAULT '{}',
+    is_read    INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS notifications_audience ON notifications (audience, user_id);
 `);
 
 // Databases created before bookings had a length get the column added (existing bookings become 1 hour)
@@ -354,6 +385,106 @@ function requireAdmin(req, res, message = 'Մուտքն արգելված է') {
   if (user && user.role === 'admin') return true;
   sendJson(res, 403, { error: message });
   return false;
+}
+
+// ---------- Test payments: the booking deposit ----------
+
+// The guest pays only the deposit online; the rest is paid at the restaurant after the meal
+const DEPOSIT_AMOUNT = 5000;
+const PAYMENT_MINUTES = 15;
+
+// Payments are a test system: they work only when the site is opened on this computer (localhost)
+function isLocalRequest(req) {
+  return /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(req.headers.host || '');
+}
+
+// SQLite keeps UTC times as "YYYY-MM-DD HH:MM:SS"; the pages get ISO times
+const isoTime = (sqlTime) => (sqlTime ? sqlTime.replace(' ', 'T') + 'Z' : null);
+
+function notify(audience, userId, type, params) {
+  db.prepare('INSERT INTO notifications (audience, user_id, type, params) VALUES (?, ?, ?, ?)')
+    .run(audience, userId, type, JSON.stringify(params));
+}
+
+// What a notification about a booking mentions: restaurant, table, day and time, guest
+function bookingInfo(reservationId) {
+  const r = db.prepare(`
+    SELECT r.user_id AS userId, r.date, r.time, t.number AS table_number, COALESCE(rest.name, '') AS restaurant,
+      u.first_name || ' ' || u.last_name AS guest
+    FROM reservations r JOIN tables t ON t.id = r.table_id JOIN users u ON u.id = r.user_id
+    LEFT JOIN restaurants rest ON rest.id = t.restaurant_id
+    WHERE r.id = ?
+  `).get(reservationId);
+  return r && { userId: r.userId, restaurant: r.restaurant, table: r.table_number, date: r.date, time: r.time, guest: r.guest };
+}
+
+function paymentOf(reservationId) {
+  return db.prepare('SELECT * FROM payments WHERE reservation_id = ?').get(reservationId);
+}
+
+// The payment as the pages see it (no card data except the brand and last four digits)
+function paymentView(payment) {
+  return payment && {
+    id: payment.id, amount: payment.amount, status: payment.status, cardBrand: payment.card_brand,
+    cardLast4: payment.card_last4, expiresAt: isoTime(payment.expires_at),
+  };
+}
+
+// Returns the deposit to the card right away: a held amount is released, a charged one is refunded.
+// Gives back the amount returned (0 when nothing was paid); an unpaid deposit is just closed
+function returnDeposit(reservationId) {
+  const payment = paymentOf(reservationId);
+  if (!payment) return 0;
+  if (payment.status === 'held' || payment.status === 'captured') {
+    const status = payment.status === 'held' ? 'released' : 'refunded';
+    db.prepare("UPDATE payments SET status = ?, returned_at = datetime('now') WHERE id = ?").run(status, payment.id);
+    return payment.amount;
+  }
+  if (payment.status === 'awaiting') db.prepare("UPDATE payments SET status = 'void' WHERE id = ?").run(payment.id);
+  return 0;
+}
+
+// Bookings not paid within 15 minutes are cancelled, and the guest is told
+function expireUnpaid() {
+  const late = db.prepare(`
+    SELECT p.id, p.reservation_id FROM payments p JOIN reservations r ON r.id = p.reservation_id
+    WHERE p.status = 'awaiting' AND p.expires_at <= datetime('now')
+  `).all();
+  late.forEach((p) => {
+    const info = bookingInfo(p.reservation_id);
+    db.prepare("UPDATE payments SET status = 'expired' WHERE id = ?").run(p.id);
+    db.prepare("UPDATE reservations SET status = 'cancelled' WHERE id = ? AND status != 'cancelled'").run(p.reservation_id);
+    if (info) notify('user', info.userId, 'bookingExpired', info);
+  });
+}
+
+expireUnpaid();
+setInterval(expireUnpaid, 30 * 1000);
+
+// Card checks for the test payment page. Nothing about the card is stored except the brand and last 4 digits
+const DECLINED_TEST_CARD = '4000000000000002';
+
+function luhnValid(number) {
+  let sum = 0;
+  for (let i = 0; i < number.length; i++) {
+    let digit = Number(number[number.length - 1 - i]);
+    if (i % 2 === 1) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+  return sum % 10 === 0;
+}
+
+function cardBrand(number) {
+  if (/^9051/.test(number)) return 'ArCa';
+  if (/^220[0-4]/.test(number)) return 'Mir';
+  if (/^4/.test(number)) return 'Visa';
+  if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(number)) return 'Mastercard';
+  if (/^3[47]/.test(number)) return 'American Express';
+  if (/^62/.test(number)) return 'UnionPay';
+  return 'Card';
 }
 
 const RESTAURANTS_ADMIN_ONLY = 'Միայն ադմինը կարող է փոխել ռեստորանները';
@@ -839,7 +970,8 @@ const routes = {
     const orders = ordersFor(upcoming.map((r) => r.id));
     sendJson(res, 200, {
       reservations: upcoming.map((r) => ({
-        ...r, order: orders[r.id] || [], canCancel: r.status !== 'cancelled' && canStillCancel(r),
+        ...r, order: orders[r.id] || [], payment: paymentView(paymentOf(r.id)),
+        canCancel: r.status !== 'cancelled' && canStillCancel(r),
       })),
     });
   },
@@ -863,7 +995,9 @@ const routes = {
     // Same rule as the guests' list: bookings whose hour is over are not shown
     const upcoming = reservations.filter((r) => !hasEnded(r));
     const orders = ordersFor(upcoming.map((r) => r.id));
-    sendJson(res, 200, { reservations: upcoming.map((r) => ({ ...r, order: orders[r.id] || [] })) });
+    sendJson(res, 200, {
+      reservations: upcoming.map((r) => ({ ...r, order: orders[r.id] || [], payment: paymentView(paymentOf(r.id)) })),
+    });
   },
 
   // A restaurant's tables on a given date, each with its bookings that day.
@@ -915,12 +1049,23 @@ const routes = {
     if (reservation.status === 'cancelled') {
       return sendJson(res, 400, { error: 'Չեղարկված ամրագրումը հնարավոր չէ հաստատել' });
     }
+    // A booking with a deposit can be confirmed only after the guest paid it
+    const payment = paymentOf(id);
+    if (payment && payment.status !== 'held') {
+      return sendJson(res, 400, { error: 'Ամրագրումը դեռ վճարված չէ' });
+    }
     // Another guest's booking for the same table and hour may already be confirmed
     if (isTableBusy(reservation.table_id, reservation.date, toMinutes(reservation.time), reservation.duration, id)) {
       return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
     }
 
     db.prepare("UPDATE reservations SET status = 'confirmed' WHERE id = ?").run(id);
+    // The deposit held on the card is charged only now
+    if (payment) {
+      db.prepare("UPDATE payments SET status = 'captured', captured_at = datetime('now') WHERE id = ?").run(payment.id);
+      const info = bookingInfo(id);
+      notify('user', info.userId, 'paymentCaptured', { ...info, amount: payment.amount });
+    }
     sendJson(res, 200, { reservation: { id, status: 'confirmed' } });
   },
 
@@ -940,6 +1085,11 @@ const routes = {
     if (reason.length > REJECT_REASON_MAX) return sendJson(res, 400, { error: 'Տեքստը չափազանց երկար է' });
 
     db.prepare("UPDATE reservations SET status = 'cancelled', reject_reason = ?, rejected_at = datetime('now') WHERE id = ?").run(reason, id);
+    const returned = returnDeposit(id);
+    if (returned) {
+      const info = bookingInfo(id);
+      notify('user', info.userId, 'depositReturnedReject', { ...info, amount: returned });
+    }
     sendJson(res, 200, { reservation: { id, status: 'cancelled', rejectReason: reason } });
   },
 
@@ -962,7 +1112,9 @@ const routes = {
     }
 
     db.prepare("UPDATE reservations SET status = 'cancelled' WHERE id = ?").run(id);
-    sendJson(res, 200, { reservation: { id, status: 'cancelled' } });
+    const returned = returnDeposit(id);
+    notify('admin', null, 'guestCancelled', { ...bookingInfo(id), amount: returned });
+    sendJson(res, 200, { reservation: { id, status: 'cancelled' }, returned });
   },
 
   'POST /api/reservations': async (req, res) => {
@@ -1015,12 +1167,16 @@ const routes = {
         .run(user.id, table.id, date, time, guests, BOOKING_MINUTES);
       const insertLine = db.prepare('INSERT INTO reservation_items (reservation_id, name, price, qty) VALUES (?, ?, ?, ?)');
       order.forEach((line) => insertLine.run(lastInsertRowid, line.name, line.price, line.qty));
+      const { lastInsertRowid: paymentId } = db.prepare(`
+        INSERT INTO payments (reservation_id, amount, expires_at) VALUES (?, ?, datetime('now', ?))
+      `).run(lastInsertRowid, DEPOSIT_AMOUNT, `+${PAYMENT_MINUTES} minutes`);
       db.exec('COMMIT');
       sendJson(res, 201, {
         reservation: {
           id: Number(lastInsertRowid), date, time, duration: BOOKING_MINUTES, guests, status: 'pending',
           tableNumber: table.number, restaurantName: table.restaurantName, order,
         },
+        payment: paymentView(db.prepare('SELECT * FROM payments WHERE id = ?').get(paymentId)),
       });
     } catch (err) {
       if (db.isTransaction) db.exec('ROLLBACK');
@@ -1030,7 +1186,102 @@ const routes = {
       throw err;
     }
   },
+
+  // ---------- Test payment page ----------
+
+  // The deposit of one of the signed-in guest's bookings, for the payment page
+  'GET /api/payment': (req, res, url) => {
+    if (!isLocalRequest(req)) return sendJson(res, 403, { error: 'Թեստային վճարումը աշխատում է միայն localhost-ում' });
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+    expireUnpaid();
+    const id = Number(url.searchParams.get('id'));
+    const payment = Number.isInteger(id) && db.prepare(`
+      SELECT p.* FROM payments p JOIN reservations r ON r.id = p.reservation_id WHERE p.id = ? AND r.user_id = ?
+    `).get(id, user.id);
+    if (!payment) return sendJson(res, 404, { error: 'Այդպիսի վճարում չկա' });
+    sendJson(res, 200, { payment: paymentView(payment), booking: bookingInfo(payment.reservation_id) });
+  },
+
+  // Pays the deposit with a card: the amount is held on the card until the admin confirms the booking
+  'POST /api/payment/pay': async (req, res) => {
+    if (!isLocalRequest(req)) return sendJson(res, 403, { error: 'Թեստային վճարումը աշխատում է միայն localhost-ում' });
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+    expireUnpaid();
+
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const payment = Number.isInteger(id) && db.prepare(`
+      SELECT p.* FROM payments p JOIN reservations r ON r.id = p.reservation_id WHERE p.id = ? AND r.user_id = ?
+    `).get(id, user.id);
+    if (!payment) return sendJson(res, 404, { error: 'Այդպիսի վճարում չկա' });
+    if (payment.status === 'expired') return sendJson(res, 400, { error: 'Վճարման 15 րոպեն անցել է, ամրագրումը չեղարկվել է' });
+    if (payment.status !== 'awaiting') return sendJson(res, 400, { error: 'Այս ամրագրումն արդեն վճարված է' });
+
+    // Card checks: number (Luhn), expiry date in the future, 3–4 digit code, name
+    const number = asText(body.number).replace(/[\s-]/g, '');
+    const expiry = /^(\d{2})\s*\/\s*(\d{2})$/.exec(asText(body.expiry));
+    const errors = {};
+    if (!/^\d{12,19}$/.test(number) || !luhnValid(number)) errors.number = 'Քարտի համարը սխալ է';
+    if (!expiry || Number(expiry[1]) < 1 || Number(expiry[1]) > 12 ||
+        new Date(2000 + Number(expiry[2]), Number(expiry[1])) <= new Date()) errors.expiry = 'Ժամկետը սխալ է կամ անցել է';
+    if (!/^\d{3,4}$/.test(asText(body.cvc))) errors.cvc = 'Գրեք քարտի 3 կամ 4 նիշանոց կոդը';
+    if (!asText(body.name)) errors.name = 'Գրեք քարտատիրոջ անունը';
+    if (Object.keys(errors).length) return sendJson(res, 400, { errors });
+    if (number === DECLINED_TEST_CARD) return sendJson(res, 402, { error: 'Քարտը մերժվեց. փորձեք այլ քարտ' });
+
+    db.prepare(`
+      UPDATE payments SET status = 'held', card_brand = ?, card_last4 = ?, paid_at = datetime('now') WHERE id = ?
+    `).run(cardBrand(number), number.slice(-4), payment.id);
+    // Both sides are told: the admin (to confirm the booking) and the guest (the amount is held)
+    const info = bookingInfo(payment.reservation_id);
+    notify('admin', null, 'paymentHeld', { ...info, amount: payment.amount, card: cardBrand(number) });
+    notify('user', info.userId, 'paymentHeldGuest', { ...info, amount: payment.amount, card: cardBrand(number), last4: number.slice(-4) });
+    sendJson(res, 200, { payment: paymentView(db.prepare('SELECT * FROM payments WHERE id = ?').get(payment.id)) });
+  },
+
+  // ---------- Notifications ----------
+
+  'GET /api/notifications': (req, res) => {
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+    expireUnpaid();
+    sendJson(res, 200, notificationsFor('user', user.id));
+  },
+
+  'POST /api/notifications/read': (req, res) => {
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+    db.prepare("UPDATE notifications SET is_read = 1 WHERE audience = 'user' AND user_id = ?").run(user.id);
+    sendJson(res, 200, { ok: true });
+  },
+
+  'GET /api/admin/notifications': (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    expireUnpaid();
+    sendJson(res, 200, notificationsFor('admin', null));
+  },
+
+  'POST /api/admin/notifications/read': (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    db.prepare("UPDATE notifications SET is_read = 1 WHERE audience = 'admin'").run();
+    sendJson(res, 200, { ok: true });
+  },
 };
+
+// The last 30 notifications and how many are unread
+function notificationsFor(audience, userId) {
+  const rows = audience === 'admin'
+    ? db.prepare("SELECT * FROM notifications WHERE audience = 'admin' ORDER BY id DESC LIMIT 30").all()
+    : db.prepare("SELECT * FROM notifications WHERE audience = 'user' AND user_id = ? ORDER BY id DESC LIMIT 30").all(userId);
+  return {
+    unread: rows.filter((n) => !n.is_read).length,
+    notifications: rows.map((n) => ({
+      id: n.id, type: n.type, params: JSON.parse(n.params), read: Boolean(n.is_read), createdAt: isoTime(n.created_at),
+    })),
+  };
+}
 
 // ---------- Static files ----------
 

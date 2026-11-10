@@ -25,6 +25,15 @@
         <button class="outline-btn" id="loginBtn" type="button" data-i18n="login">Log in</button>
         <button class="signup-btn" id="signupBtn" type="button" data-i18n="signup">Sign up</button>
         <span class="user-name" id="userName" hidden></span>
+        <!-- Ծանուցումներ (երևում են մուտք գործելուց հետո) -->
+        <div class="notif" id="notif" hidden>
+          <button class="outline-btn notif-btn" id="notifBtn" type="button" aria-expanded="false" aria-controls="notifPanel" aria-label="Notifications">🔔<span class="notif-count" id="notifCount" hidden></span></button>
+          <div class="notif-panel" id="notifPanel" hidden>
+            <strong class="notif-title" data-i18n="notifTitle">Notifications</strong>
+            <p class="notif-empty" id="notifEmpty" data-i18n="notifEmpty">No notifications yet.</p>
+            <ul class="notif-list" id="notifList"></ul>
+          </div>
+        </div>
         <a class="outline-btn admin-login-link" id="adminPanelLink" href="admin.html" data-i18n="adminPanelBtn">Admin</a>
         <button class="outline-btn" id="logoutBtn" type="button" hidden data-i18n="logout">Log out</button>
       </div>
@@ -124,6 +133,17 @@
             </li>
           </ol>
 
+          <!-- Վճարման կարգը՝ կանխավճարի կանոնները -->
+          <h3 class="side-subtitle side-mark" data-i18n="payRulesTitle">Payment rules</h3>
+          <ol class="pay-rules">
+            <li data-i18n="payRule1">To secure a booking, a deposit of AMD 5,000 must be paid. The remaining amount is paid at the restaurant at the end of the visit.</li>
+            <li data-i18n="payRule2">The deposit must be paid within 15 minutes of booking. If payment is not received within this time, the booking is cancelled automatically.</li>
+            <li data-i18n="payRule3">Payment is accepted by Visa, Mastercard, ArCa and Mir cards.</li>
+            <li data-i18n="payRule4">At payment, the deposit is held on the card and charged only after the restaurant confirms the booking. You will be notified when the charge is made.</li>
+            <li data-i18n="payRule5">You may cancel the booking no later than 1 hour before the booked time. In this case the deposit is returned to the card immediately and the restaurant is notified.</li>
+            <li data-i18n="payRule6">If the restaurant rejects the booking, the deposit is returned to the card immediately.</li>
+          </ol>
+
           <!-- Հնարավորությունները՝ նույն ուղեցույցում, քայլերից հետո -->
           <h3 class="side-subtitle" id="features" data-i18n="featTitle">Features</h3>
           <div class="side-features">
@@ -173,7 +193,6 @@
 
       <nav class="content-tabs" id="contentTabs" role="tablist">
         <button class="content-tab active" type="button" role="tab" data-tab="restaurants" data-i18n="restaurantsTitle">Restaurants</button>
-        <button class="content-tab" type="button" role="tab" data-tab="booking" data-i18n="hallTab">Floor plan</button>
       </nav>
 
       <section id="restaurants" class="tab-panel" role="tabpanel">
@@ -275,7 +294,8 @@
                 <ul class="panel-order-list" id="panelOrderList"></ul>
                 <p class="panel-order-total" id="panelOrderTotal"></p>
               </div>
-              <button class="search-btn" id="bookBtn" type="button" data-i18n="bookNow">Book</button>
+              <p class="panel-deposit" data-i18n="panelDeposit">To book, pay a 5 000 ֏ deposit within 15 minutes. The rest is paid at the restaurant after the meal.</p>
+              <button class="search-btn" id="bookBtn" type="button" data-i18n="bookAndPay">Book and pay the deposit</button>
             </div>
           </aside>
         </div>

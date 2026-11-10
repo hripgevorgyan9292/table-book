@@ -2858,3 +2858,372 @@ header .container { max-width: 1280px; }
 .side-features .card:hover .icon { background: var(--surface); }
 
 .side-features .card p { color: var(--muted); }
+
+/* =====================================================================
+   Թեստային վճարումներ, ծանուցումներ և վճարման կարգը
+   ===================================================================== */
+
+/* 🔔 Ծանուցումների զանգակը վերևի ժապավենում */
+.notif {
+  position: relative;
+  display: inline-flex;
+}
+
+.notif[hidden] { display: none; }
+
+.notif-btn {
+  position: relative;
+  padding: 8px 12px;
+}
+
+.notif-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--selected);
+  color: var(--on-selected);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.notif-count[hidden] { display: none; }
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: min(360px, calc(100vw - 32px));
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  text-align: left;
+}
+
+.notif-panel[hidden] { display: none; }
+
+.notif-title {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.notif-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.notif-empty[hidden] { display: none; }
+
+.notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.notif-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.notif-item.unread {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.notif-item time {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Կանխավճարի վիճակը ամրագրման քարտերում */
+.payment-line {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.booking-main .payment-line { margin-top: 2px; }
+
+.payment-line.awaiting { color: #b07a1e; }
+.payment-line.held { color: var(--accent); }
+.payment-line.captured { color: #3f8a4a; }
+.payment-line.released,
+.payment-line.refunded { color: var(--accent); }
+.payment-line.expired,
+.payment-line.void { color: var(--muted); }
+
+[data-theme="dark"] .payment-line.awaiting { color: #f0c66b; }
+[data-theme="dark"] .payment-line.captured { color: #8fd19a; }
+
+.pay-now-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+
+/* Կանխավճարի նշումը ամրագրման վահանակում */
+.panel-deposit {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+/* Ուղեցույցում «Վճարման կարգը»՝ նույն ոճով, ինչ «Հնարավորություններ»-ը */
+.sidebar .side-mark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 10px;
+  font-size: 0.95rem;
+}
+
+.sidebar .side-mark::before {
+  content: "";
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.pay-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pay-rules li {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pay-rules li + li { border-top: 1px solid var(--border); }
+
+.pay-rule-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+/* ---------- Թեստային վճարման էջ ---------- */
+
+.pay-page {
+  background:
+    radial-gradient(900px 500px at 100% -10%, var(--accent-soft), transparent 60%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+.pay-main {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: grid;
+  gap: 16px;
+}
+
+
+.pay-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  padding: 24px;
+}
+
+.pay-card[hidden] { display: none; }
+
+.pay-card h1 {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+}
+
+.pay-summary {
+  margin: 0 0 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.pay-summary div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pay-summary dt { color: var(--muted); }
+
+.pay-summary dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.pay-summary .pay-amount {
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.pay-summary .pay-amount dd {
+  color: var(--accent);
+  font-size: 1.3rem;
+}
+
+.pay-timer {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.pay-timer.urgent {
+  background: var(--selected);
+  color: var(--on-selected);
+}
+
+.pay-brands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.pay-brands span {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.card-number-wrap { position: relative; }
+
+.card-number-wrap input {
+  width: 100%;
+  padding-right: 110px;
+  letter-spacing: 0.06em;
+}
+
+.card-brand {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.pay-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.pay-test-cards {
+  margin-top: 16px;
+  font-size: 0.85rem;
+}
+
+.pay-test-cards summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pay-test-cards ul {
+  margin: 8px 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.pay-test-cards p { margin: 0; color: var(--muted); }
+
+.pay-result { text-align: center; }
+
+.pay-result-icon {
+  font-size: 2.6rem;
+  margin-bottom: 8px;
+}
+
+.pay-result p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pay-back-btn {
+  display: inline-block;
+  width: auto;
+  padding: 12px 22px;
+  text-decoration: none;
+}
+
+/* «Վճարման կարգը»՝ համարակալված կետեր, կանոնակարգի պես */
+.pay-rules {
+  counter-reset: pay-rule;
+}
+
+.pay-rules li {
+  counter-increment: pay-rule;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  text-align: left;
+}
+
+.pay-rules li::before {
+  content: counter(pay-rule);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

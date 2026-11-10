@@ -38,11 +38,23 @@ function showView(user) {
   adminName.hidden = !user;
   logoutBtn.hidden = !user;
   renderUser();
+  bell.show(Boolean(user && user.isAdmin));
   if (user && user.isAdmin) {
     loadAdminBookings();
     loadRestaurants();
+    bell.load();
   }
 }
+
+// 🔔 Ծանուցումներ՝ հյուրը վճարեց կանխավճարը (գումարը սառեցված է), հյուրը չեղարկեց ամրագրումը
+const bell = createNotificationBell({
+  listUrl: "/api/admin/notifications",
+  readUrl: "/api/admin/notifications/read",
+  onNew: (text) => {
+    showToast(text);
+    loadAdminBookings();
+  },
+});
 
 function renderUser() {
   if (!currentUser) return;
@@ -150,7 +162,10 @@ async function loadAdminBookings() {
 // Ցանկը թարմանում է ինքն իրեն. երևում են նոր ամրագրումները, իսկ մերժվածները
 // անհետանում են 2 րոպե հետո, երբ սերվերը ջնջում է դրանք
 setInterval(() => {
-  if (currentUser && currentUser.isAdmin && !document.hidden) loadAdminBookings();
+  if (currentUser && currentUser.isAdmin && !document.hidden) {
+    loadAdminBookings();
+    bell.load();
+  }
 }, 30 * 1000);
 
 // Քաղաքները, որոնց ցանկը ադմինը բացել է (մնում են բաց 30 վայրկյանը մեկ թարմանալիս)
@@ -235,6 +250,9 @@ function bookingItem(booking) {
   // Ուտեստները, որոնք հյուրը պատվիրել է ամրագրման հետ
   const order = orderLine(booking.order);
   if (order) main.appendChild(order);
+  // Կանխավճարի վիճակը՝ սպասում է վճարման, սառեցված է, գանձված է, վերադարձված է
+  const payment = paymentLine(booking.payment);
+  if (payment) main.appendChild(payment);
 
   if (booking.rejectReason) {
     const reason = document.createElement("span");
@@ -254,6 +272,11 @@ function bookingItem(booking) {
     confirmBtn.className = "search-btn";
     confirmBtn.textContent = t("confirmBtn");
     confirmBtn.addEventListener("click", () => confirmBooking(booking, confirmBtn));
+    // Հաստատել կարելի է միայն վճարված (սառեցված) կանխավճարով ամրագրումը
+    if (booking.payment && booking.payment.status !== "held") {
+      confirmBtn.disabled = true;
+      confirmBtn.title = t("confirmNeedsPayment");
+    }
 
     const rejectBtn = document.createElement("button");
     rejectBtn.type = "button";
@@ -1009,6 +1032,7 @@ function applyLanguage() {
   renderRestaurants();
   renderRejectTemplates();
   renderMenuEditor();
+  bell.render();
   restaurantFormTitle.textContent = t(editingRestaurant ? "restaurantFormEdit" : "restaurantFormAdd");
 }
 

@@ -20,6 +20,15 @@
         </select>
         <button class="theme-toggle" id="themeToggle" type="button">🌙 Dark</button>
         <span class="user-name" id="adminName" hidden></span>
+        <!-- Ծանուցումներ՝ հյուրը վճարեց կանխավճարը, հյուրը չեղարկեց և գումարը վերադարձվեց -->
+        <div class="notif" id="notif" hidden>
+          <button class="outline-btn notif-btn" id="notifBtn" type="button" aria-expanded="false" aria-controls="notifPanel" aria-label="Notifications">🔔<span class="notif-count" id="notifCount" hidden></span></button>
+          <div class="notif-panel" id="notifPanel" hidden>
+            <strong class="notif-title" data-i18n="notifTitle">Notifications</strong>
+            <p class="notif-empty" id="notifEmpty" data-i18n="notifEmpty">No notifications yet.</p>
+            <ul class="notif-list" id="notifList"></ul>
+          </div>
+        </div>
         <button class="outline-btn" id="logoutBtn" type="button" hidden data-i18n="logout">Log out</button>
       </div>
     </div>

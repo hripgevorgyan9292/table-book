@@ -178,20 +178,20 @@ function deleteOldRejected() {
 deleteOldRejected();
 setInterval(deleteOldRejected, 30 * 1000);
 
-// Users created before admins existed get the column added (nobody is admin until make-admin is run)
+// Every user has a role: 'user' (guest) or 'admin' (staff); everyone starts as 'user'
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
-if (!userColumns.includes('is_admin')) {
-  db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0');
-}
-
-// Every user has a role: 'user' (guest) or 'admin' (staff).
-// Users who were already admins become 'admin'; everyone else becomes 'user'.
 if (!userColumns.includes('role')) {
   db.exec(`
     ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'
       CHECK (role IN ('user', 'admin'));
-    UPDATE users SET role = 'admin' WHERE is_admin = 1;
   `);
+  // Older databases marked admins with is_admin = 1; they stay admins
+  if (userColumns.includes('is_admin')) db.exec("UPDATE users SET role = 'admin' WHERE is_admin = 1");
+}
+
+// The old is_admin flag (0/1) was replaced by role, so the column is removed
+if (userColumns.includes('is_admin')) {
+  db.exec('ALTER TABLE users DROP COLUMN is_admin');
 }
 
 // Dishes created before photos existed have none (the pages show the section's icon instead)

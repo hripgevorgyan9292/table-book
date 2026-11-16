@@ -17,7 +17,7 @@ if (!userColumns.includes('role')) {
   process.exit(1);
 }
 
-const { changes } = db.prepare("UPDATE users SET role = 'admin', is_admin = 1 WHERE email = ?").run(email);
+const { changes } = db.prepare("UPDATE users SET role = 'admin' WHERE email = ?").run(email);
 if (changes === 0) {
   console.log(`No user with email ${email}. Sign up on the site first.`);
   process.exit(1);

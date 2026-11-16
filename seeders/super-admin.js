@@ -56,8 +56,8 @@ if (existing) {
 }
 
 db.prepare(`
-  INSERT INTO users (first_name, last_name, email, password_hash, role, is_admin)
-  VALUES ('Super', 'Admin', ?, ?, 'admin', 1)
+  INSERT INTO users (first_name, last_name, email, password_hash, role)
+  VALUES ('Super', 'Admin', ?, ?, 'admin')
 `).run(EMAIL, hashPassword(password));
 
 console.log('Super Admin created.');

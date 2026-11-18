@@ -286,7 +286,30 @@ function bookingItem(booking) {
     item.append(confirmBtn, rejectBtn);
   }
 
+  // Հաստատված ամրագրումը ադմինը կարող է երկարացնել 30 րոպեով
+  if (booking.status === "confirmed") {
+    const extendBtn = document.createElement("button");
+    extendBtn.type = "button";
+    extendBtn.className = "search-btn";
+    extendBtn.textContent = t("extendBtn");
+    extendBtn.addEventListener("click", () => extendBooking(booking, extendBtn));
+    item.appendChild(extendBtn);
+  }
+
   return item;
+}
+
+async function extendBooking(booking, btn) {
+  btn.disabled = true;
+  try {
+    const { ok, result } = await postJson("/api/admin/reservations/extend", { id: booking.id });
+    showToast(ok ? t("bookingExtended") : translateServer(result.error));
+    loadAdminBookings();
+    loadAdminTables();
+  } catch (e) {
+    showToast(t("networkError"));
+    btn.disabled = false;
+  }
 }
 
 async function confirmBooking(booking, btn) {

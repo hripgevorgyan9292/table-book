@@ -445,6 +445,8 @@ function canStillCancel(reservation) {
 const BOOKING_MINUTES = 60;
 const REJECT_REASON_MAX = 300;
 const CLOSING_MINUTES = 23 * 60;
+// The admin extends a confirmed booking by this many minutes at a time
+const EXTEND_MINUTES = 30;
 
 // True once the booking's time slot is over (start + duration is in the past)
 function hasEnded(reservation) {
@@ -1168,6 +1170,37 @@ const routes = {
       notify('user', info.userId, 'paymentCaptured', { ...info, amount: payment.amount });
     }
     sendJson(res, 200, { reservation: { id, status: 'confirmed' } });
+  },
+
+  // Extend a confirmed booking by 30 minutes; the guest gets a notification
+  'POST /api/admin/reservations/extend': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = Number((await readJson(req)).id);
+    const reservation = Number.isInteger(id) && db.prepare('SELECT * FROM reservations WHERE id = ?').get(id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.status !== 'confirmed') {
+      return sendJson(res, 400, { error: 'Երկարացնել կարելի է միայն հաստատված ամրագրումը' });
+    }
+    if (hasEnded(reservation)) {
+      return sendJson(res, 400, { error: 'Ավարտված ամրագրումը հնարավոր չէ երկարացնել' });
+    }
+    const start = toMinutes(reservation.time);
+    const duration = reservation.duration + EXTEND_MINUTES;
+    if (start + duration > CLOSING_MINUTES) {
+      return sendJson(res, 400, { error: 'Ամրագրումը պետք է ավարտվի մինչև 23:00' });
+    }
+    // The extra 30 minutes must not overlap another confirmed booking of the same table
+    if (isTableBusy(reservation.table_id, reservation.date, start, duration, id)) {
+      return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
+    }
+
+    db.prepare('UPDATE reservations SET duration = ? WHERE id = ?').run(duration, id);
+    const end = start + duration;
+    const endTime = String(Math.floor(end / 60)).padStart(2, '0') + ':' + String(end % 60).padStart(2, '0');
+    const info = bookingInfo(id);
+    notify('user', info.userId, 'bookingExtended', { ...info, end: endTime });
+    sendJson(res, 200, { reservation: { id, duration } });
   },
 
   // Reject a booking with a message the guest sees in "My bookings"

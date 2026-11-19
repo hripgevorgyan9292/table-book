@@ -739,8 +739,16 @@ function renderMyBookings() {
     message.append(icon, text);
 
     item.append(top, details);
-    const order = orderLine(booking.order, "p");
+    // Ժամանումից հետո ամեն պատվեր երևում է առանձին՝ իր փուլերով, մինչ այդ՝ նախնական պատվերի տողը
+    const arrived = booking.status === "confirmed" && booking.arrivedAt;
+    const order = !arrived && orderLine(booking.order, "p");
     if (order) item.appendChild(order);
+    if (arrived && booking.orders.length) {
+      const orders = document.createElement("div");
+      orders.className = "booking-orders";
+      booking.orders.forEach((o) => orders.appendChild(orderBlock(o)));
+      item.appendChild(orders);
+    }
     const payment = paymentLine(booking.payment);
     if (payment) item.appendChild(payment);
     item.appendChild(message);
@@ -766,6 +774,21 @@ function renderMyBookings() {
       closed.className = "cancel-closed";
       closed.textContent = t("cancelTooLate");
       item.appendChild(closed);
+    }
+
+    // Ռեստորանում գտնվելիս՝ «Պատվիրել» կոճակը, որը բացում է ճաշացանկը
+    if (booking.canOrder) {
+      const orderBtn = document.createElement("button");
+      orderBtn.type = "button";
+      orderBtn.className = "search-btn";
+      orderBtn.textContent = t("orderMoreBtn");
+      orderBtn.addEventListener("click", () => {
+        const restaurant = restaurants.find((r) => r.id === booking.restaurantId) ||
+          { id: booking.restaurantId, name: booking.restaurantName };
+        setMyBookingsOpen(false);
+        openMenu(restaurant, booking);
+      });
+      item.appendChild(orderBtn);
     }
 
     // Երկարացում. դիմումն ուղարկված է, կամ «Երկարացնել ամրագրումը» կոճակը
@@ -1073,12 +1096,17 @@ panelOrderEdit.addEventListener("click", () => {
 
 bookRestaurant.addEventListener("change", renderOrderPanel);
 
-async function openMenu(restaurant) {
+// orderFor-ով (հյուրը ռեստորանում է) ճաշացանկից ուղարկվում է նոր պատվեր այդ ամրագրման համար,
+// և ընտրված ուտեստները պահվում են առանձին, ոչ թե ամրագրման պատվերի հետ
+async function openMenu(restaurant, orderFor = null) {
   try {
     const response = await fetch("/api/menu?restaurantId=" + restaurant.id);
     const result = await response.json();
     if (!response.ok) return showToast(translateServer(result.error));
-    menuState = { restaurant, items: result.items, categories: result.categories, category: "" };
+    menuState = {
+      restaurant, items: result.items, categories: result.categories, category: "",
+      orderFor, cartKey: orderFor ? "booking-" + orderFor.id : restaurant.id,
+    };
     renderMenu();
     openModal(menuModal);
   } catch (e) {
@@ -1088,7 +1116,7 @@ async function openMenu(restaurant) {
 
 function renderMenu() {
   if (!menuState) return;
-  const { restaurant, items, categories } = menuState;
+  const { restaurant, items, categories, cartKey, orderFor } = menuState;
   menuTitle.textContent = restaurant.name;
   menuMeta.textContent = [restaurant.cuisine, cityName(restaurant.city)].filter(Boolean).join(" · ");
 
@@ -1110,13 +1138,13 @@ function renderMenu() {
   renderMenuList(menuList, items, categories, {
     category: menuState.category,
     decorate: (row, dish) => {
-      if ((carts[restaurant.id] || {})[dish.id]) row.classList.add("chosen");
-      row.appendChild(dishQtyControl(restaurant.id, dish));
+      if ((carts[cartKey] || {})[dish.id]) row.classList.add("chosen");
+      row.appendChild(dishQtyControl(cartKey, dish));
     },
   });
 
   // Ներքևում՝ ինչ է ընտրված, ամեն տողի գինը, ընդհանուր գինը և «×»՝ տողը հանելու համար
-  const lines = cartLines(restaurant.id);
+  const lines = cartLines(cartKey);
   const count = lines.reduce((sum, line) => sum + line.qty, 0);
   menuOrderBar.hidden = count === 0;
   menuOrderList.innerHTML = "";
@@ -1136,25 +1164,53 @@ function renderMenu() {
     remove.className = "menu-order-remove";
     remove.textContent = "×";
     remove.setAttribute("aria-label", t("orderRemove", { name: line.name }));
-    remove.addEventListener("click", () => setDishQty(restaurant.id, line, 0));
+    remove.addEventListener("click", () => setDishQty(cartKey, line, 0));
     item.append(name, unit, sum, remove);
     menuOrderList.appendChild(item);
   });
   menuOrderSummary.textContent = t("orderSummary", { n: count, total: formatPrice(cartTotal(lines)) });
-  menuBookBtn.textContent = t(count ? "bookWithOrder" : "bookTableBtn");
+  if (orderFor) {
+    // Ռեստորանում՝ «Ուղարկել պատվերը», որը աշխատում է միայն ընտրված ուտեստներով
+    menuBookBtn.textContent = t("orderSend");
+    menuBookBtn.disabled = count === 0;
+  } else {
+    menuBookBtn.textContent = t(count ? "bookWithOrder" : "bookTableBtn");
+    menuBookBtn.disabled = false;
+  }
 }
 
 document.getElementById("menuOrderClear").addEventListener("click", () => {
-  delete carts[menuState.restaurant.id];
+  delete carts[menuState.cartKey];
   renderMenu();
   renderOrderPanel();
 });
 
-menuBookBtn.addEventListener("click", () => {
-  const restaurant = menuState.restaurant;
-  closeModal();
-  bookAtRestaurant(restaurant);
-  renderOrderPanel();
+menuBookBtn.addEventListener("click", async () => {
+  const { restaurant, orderFor, cartKey } = menuState;
+  if (!orderFor) {
+    closeModal();
+    bookAtRestaurant(restaurant);
+    renderOrderPanel();
+    return;
+  }
+  // Նոր պատվեր ռեստորանում գտնվելիս
+  menuBookBtn.disabled = true;
+  try {
+    const order = cartLines(cartKey).map((line) => ({ id: line.id, qty: line.qty }));
+    const { ok, result } = await postJson("/api/reservations/order", { id: orderFor.id, order });
+    if (ok) {
+      delete carts[cartKey];
+      closeModal();
+      showToast(t("orderSentGuest"));
+      loadMyBookings();
+    } else {
+      showToast(translateServer(result.error));
+      menuBookBtn.disabled = false;
+    }
+  } catch (e) {
+    showToast(t("networkError"));
+    menuBookBtn.disabled = false;
+  }
 });
 
 // ---------- Լեզվի ընտրություն ----------

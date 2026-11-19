@@ -1149,6 +1149,32 @@ footer {
   font-size: 0.8rem;
 }
 
+/* Ամրագրման երկարացման դիմում */
+.extend-sent {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.extend-booking-info {
+  margin: -8px 0 16px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.extend-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.extend-options .search-btn { flex: 1; }
+
+.extend-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 /* ---------- Ռեստորաններ ---------- */
 
 .section-head {
@@ -1306,6 +1332,15 @@ footer {
   margin-top: 4px;
   color: var(--selected);
   font-size: 0.85rem;
+}
+
+/* Հյուրի երկարացման դիմումը ադմին պանելում */
+.booking-main .extend-request {
+  display: block;
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 /* Մերժման պատուհան */

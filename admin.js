@@ -286,29 +286,40 @@ function bookingItem(booking) {
     item.append(confirmBtn, rejectBtn);
   }
 
-  // Հաստատված ամրագրումը ադմինը կարող է երկարացնել 30 րոպեով
-  if (booking.status === "confirmed") {
-    const extendBtn = document.createElement("button");
-    extendBtn.type = "button";
-    extendBtn.className = "search-btn";
-    extendBtn.textContent = t("extendBtn");
-    extendBtn.addEventListener("click", () => extendBooking(booking, extendBtn));
-    item.appendChild(extendBtn);
+  // Հյուրի երկարացման դիմումը՝ «Թույլատրել» և «Մերժել» կոճակներով
+  if (booking.status === "confirmed" && booking.extendRequest) {
+    const request = document.createElement("span");
+    request.className = "extend-request";
+    request.textContent = t("extendRequestShown", { what: t(booking.extendRequest === 60 ? "extend60" : "extend30") });
+    main.appendChild(request);
+
+    const approveBtn = document.createElement("button");
+    approveBtn.type = "button";
+    approveBtn.className = "search-btn";
+    approveBtn.textContent = t("extendApproveBtn");
+    const rejectBtn = document.createElement("button");
+    rejectBtn.type = "button";
+    rejectBtn.className = "cancel-btn";
+    rejectBtn.textContent = t("rejectBtn");
+    approveBtn.addEventListener("click", () => answerExtend(booking, "approve", [approveBtn, rejectBtn]));
+    rejectBtn.addEventListener("click", () => answerExtend(booking, "reject", [approveBtn, rejectBtn]));
+    item.append(approveBtn, rejectBtn);
   }
 
   return item;
 }
 
-async function extendBooking(booking, btn) {
-  btn.disabled = true;
+// Պատասխան երկարացման դիմումին. answer-ը «approve» է կամ «reject»
+async function answerExtend(booking, answer, buttons) {
+  buttons.forEach((b) => (b.disabled = true));
   try {
-    const { ok, result } = await postJson("/api/admin/reservations/extend", { id: booking.id });
-    showToast(ok ? t("bookingExtended") : translateServer(result.error));
+    const { ok, result } = await postJson("/api/admin/reservations/extend/" + answer, { id: booking.id });
+    showToast(ok ? t(answer === "approve" ? "extendApproved" : "extendRejected") : translateServer(result.error));
     loadAdminBookings();
     loadAdminTables();
   } catch (e) {
     showToast(t("networkError"));
-    btn.disabled = false;
+    buttons.forEach((b) => (b.disabled = false));
   }
 }
 

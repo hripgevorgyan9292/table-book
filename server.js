@@ -165,6 +165,18 @@ if (!reservationColumns.includes('rejected_at')) {
   `);
 }
 
+// The guest's request to extend a booking: the minutes asked for (NULL when there is no open request),
+// how many requests were sent, and whether one was rejected (then no more requests)
+if (!reservationColumns.includes('extend_request')) {
+  db.exec('ALTER TABLE reservations ADD COLUMN extend_request INTEGER');
+}
+if (!reservationColumns.includes('extend_count')) {
+  db.exec('ALTER TABLE reservations ADD COLUMN extend_count INTEGER NOT NULL DEFAULT 0');
+}
+if (!reservationColumns.includes('extend_rejected')) {
+  db.exec('ALTER TABLE reservations ADD COLUMN extend_rejected INTEGER NOT NULL DEFAULT 0');
+}
+
 // The guest has 2 minutes to read the admin's message, then the rejected booking is removed
 const REJECTED_KEEP_MINUTES = 2;
 
@@ -441,12 +453,36 @@ function canStillCancel(reservation) {
   return new Date(`${reservation.date}T${reservation.time}`) - new Date() >= CANCEL_BEFORE_MS;
 }
 
-// Every new booking holds the table for 1 hour; the stored duration lets the admin extend it later
+// Every new booking holds the table for 1 hour; the stored duration grows when an extension is approved
 const BOOKING_MINUTES = 60;
 const REJECT_REASON_MAX = 300;
 const CLOSING_MINUTES = 23 * 60;
-// The admin extends a confirmed booking by this many minutes at a time
-const EXTEND_MINUTES = 30;
+// A guest can ask to extend a confirmed booking by 30 minutes or 1 hour, at most twice,
+// and not again after a request was rejected
+const EXTEND_OPTIONS = [30, 60];
+const EXTEND_REQUESTS_MAX = 2;
+
+// True if the guest may still send an extension request for this booking.
+// Not when even the shortest extension would end after 23:00.
+function canRequestExtend(reservation) {
+  const fitsBeforeClosing =
+    toMinutes(reservation.time) + reservation.duration + Math.min(...EXTEND_OPTIONS) <= CLOSING_MINUTES;
+  return reservation.status === 'confirmed' && reservation.extend_request === null &&
+    reservation.extend_count < EXTEND_REQUESTS_MAX && !reservation.extend_rejected &&
+    canStillCancel(reservation) && fitsBeforeClosing;
+}
+
+// Why the booking can't be made `minutes` longer, or null if it can
+function extendError(reservation, minutes) {
+  const start = toMinutes(reservation.time);
+  const duration = reservation.duration + minutes;
+  if (start + duration > CLOSING_MINUTES) return { status: 400, error: 'Ամրագրումը պետք է ավարտվի մինչև 23:00' };
+  // The extra time must not overlap another confirmed booking of the same table
+  if (isTableBusy(reservation.table_id, reservation.date, start, duration, reservation.id)) {
+    return { status: 409, error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' };
+  }
+  return null;
+}
 
 // True once the booking's time slot is over (start + duration is in the past)
 function hasEnded(reservation) {
@@ -1061,7 +1097,7 @@ const routes = {
 
     const reservations = db.prepare(`
       SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
-        COALESCE(rest.name, '') AS restaurantName
+        COALESCE(rest.name, '') AS restaurantName, r.extend_request, r.extend_count, r.extend_rejected
       FROM reservations r
       JOIN tables t ON t.id = r.table_id
       LEFT JOIN restaurants rest ON rest.id = t.restaurant_id
@@ -1072,11 +1108,47 @@ const routes = {
     const upcoming = reservations.filter((r) => !hasEnded(r));
     const orders = ordersFor(upcoming.map((r) => r.id));
     sendJson(res, 200, {
-      reservations: upcoming.map((r) => ({
+      reservations: upcoming.map(({ extend_request, extend_count, extend_rejected, ...r }) => ({
         ...r, order: orders[r.id] || [], payment: paymentView(paymentOf(r.id)),
         canCancel: r.status !== 'cancelled' && canStillCancel(r),
+        extendRequest: extend_request,
+        canExtend: canRequestExtend({ ...r, extend_request, extend_count, extend_rejected }),
       })),
     });
+  },
+
+  // The guest asks the restaurant to extend a confirmed booking by 30 minutes or 1 hour
+  'POST /api/reservations/extend-request': async (req, res) => {
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const minutes = Number(body.minutes);
+    const reservation = Number.isInteger(id) &&
+      db.prepare('SELECT * FROM reservations WHERE id = ? AND user_id = ?').get(id, user.id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (!EXTEND_OPTIONS.includes(minutes)) return sendJson(res, 400, { error: 'Ընտրեք 30 րոպե կամ 1 ժամ' });
+    if (reservation.status !== 'confirmed') {
+      return sendJson(res, 400, { error: 'Երկարացնել կարելի է միայն հաստատված ամրագրումը' });
+    }
+    if (reservation.extend_request !== null) {
+      return sendJson(res, 400, { error: 'Երկարացման դիմումն արդեն ուղարկված է' });
+    }
+    if (reservation.extend_rejected || reservation.extend_count >= EXTEND_REQUESTS_MAX) {
+      return sendJson(res, 400, { error: 'Այս ամրագրումն այլևս հնարավոր չէ երկարացնել' });
+    }
+    if (!canStillCancel(reservation)) {
+      return sendJson(res, 400, { error: 'Երկարացման դիմումը կարելի է ուղարկել ամրագրումից առնվազն 1 ժամ առաջ' });
+    }
+    // Checked now too, so the guest doesn't wait for an answer that can only be "no"
+    const problem = extendError(reservation, minutes);
+    if (problem) return sendJson(res, problem.status, { error: problem.error });
+
+    db.prepare('UPDATE reservations SET extend_request = ?, extend_count = extend_count + 1 WHERE id = ?').run(minutes, id);
+    notify('admin', null, 'extendRequested', { ...bookingInfo(id), minutes });
+    sendJson(res, 200, { reservation: { id, extendRequest: minutes } });
   },
 
   // ---------- Admin: every guest's upcoming bookings, and confirming them ----------
@@ -1086,6 +1158,7 @@ const routes = {
 
     const reservations = db.prepare(`
       SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
+        r.extend_request AS extendRequest,
         COALESCE(rest.name, '') AS restaurantName, COALESCE(rest.city, '') AS restaurantCity,
         u.first_name || ' ' || u.last_name AS guestName, u.email AS guestEmail
       FROM reservations r
@@ -1172,35 +1245,45 @@ const routes = {
     sendJson(res, 200, { reservation: { id, status: 'confirmed' } });
   },
 
-  // Extend a confirmed booking by 30 minutes; the guest gets a notification
-  'POST /api/admin/reservations/extend': async (req, res) => {
+  // Approve the guest's extension request: the booking gets longer and the guest is notified
+  'POST /api/admin/reservations/extend/approve': async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const id = Number((await readJson(req)).id);
     const reservation = Number.isInteger(id) && db.prepare('SELECT * FROM reservations WHERE id = ?').get(id);
 
     if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.extend_request === null) return sendJson(res, 400, { error: 'Երկարացման դիմում չկա' });
     if (reservation.status !== 'confirmed') {
       return sendJson(res, 400, { error: 'Երկարացնել կարելի է միայն հաստատված ամրագրումը' });
     }
     if (hasEnded(reservation)) {
       return sendJson(res, 400, { error: 'Ավարտված ամրագրումը հնարավոր չէ երկարացնել' });
     }
-    const start = toMinutes(reservation.time);
-    const duration = reservation.duration + EXTEND_MINUTES;
-    if (start + duration > CLOSING_MINUTES) {
-      return sendJson(res, 400, { error: 'Ամրագրումը պետք է ավարտվի մինչև 23:00' });
-    }
-    // The extra 30 minutes must not overlap another confirmed booking of the same table
-    if (isTableBusy(reservation.table_id, reservation.date, start, duration, id)) {
-      return sendJson(res, 409, { error: 'Այս սեղանն այդ ժամին արդեն զբաղված է' });
-    }
+    const problem = extendError(reservation, reservation.extend_request);
+    if (problem) return sendJson(res, problem.status, { error: problem.error });
 
-    db.prepare('UPDATE reservations SET duration = ? WHERE id = ?').run(duration, id);
-    const end = start + duration;
+    const duration = reservation.duration + reservation.extend_request;
+    db.prepare('UPDATE reservations SET duration = ?, extend_request = NULL WHERE id = ?').run(duration, id);
+    const end = toMinutes(reservation.time) + duration;
     const endTime = String(Math.floor(end / 60)).padStart(2, '0') + ':' + String(end % 60).padStart(2, '0');
     const info = bookingInfo(id);
     notify('user', info.userId, 'bookingExtended', { ...info, end: endTime });
     sendJson(res, 200, { reservation: { id, duration } });
+  },
+
+  // Reject the guest's extension request (no reason); after this the guest can't ask again
+  'POST /api/admin/reservations/extend/reject': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = Number((await readJson(req)).id);
+    const reservation = Number.isInteger(id) && db.prepare('SELECT * FROM reservations WHERE id = ?').get(id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.extend_request === null) return sendJson(res, 400, { error: 'Երկարացման դիմում չկա' });
+
+    db.prepare('UPDATE reservations SET extend_request = NULL, extend_rejected = 1 WHERE id = ?').run(id);
+    const info = bookingInfo(id);
+    notify('user', info.userId, 'extendRejected', { ...info, minutes: reservation.extend_request });
+    sendJson(res, 200, { reservation: { id } });
   },
 
   // Reject a booking with a message the guest sees in "My bookings"

@@ -84,6 +84,8 @@ const TRANSLATIONS = {
     notif_bookingExtended: "{restaurant}, սեղան {table}, {date}․ ամրագրումը երկարացվեց, այժմ այն {time}–{end} է։",
     notif_extendRejected: "{restaurant}, սեղան {table}, {date} {time}․ ռեստորանը մերժեց ամրագրումը {minutes} րոպեով երկարացնելու դիմումը։",
     notif_extendRequested: "{guest}-ը խնդրում է երկարացնել ամրագրումը {minutes} րոպեով՝ {restaurant}, սեղան {table}, {date} {time}։",
+    notif_orderStage: "{restaurant}, սեղան {table}․ պատվեր {number}՝ {stage}։",
+    notif_orderPlaced: "{guest}-ը նոր պատվեր տվեց կայքից՝ {restaurant}, սեղան {table} (պատվեր {number})։",
     payRulesTitle: "Վճարման կարգը",
     payRule1: "Ամրագրումը հաստատելու համար անհրաժեշտ է վճարել 5 000 ՀՀ դրամ կանխավճար։ Պատվերի մնացած գումարը վճարվում է ռեստորանում՝ սպասարկման ավարտին։",
     payRule2: "Կանխավճարը անհրաժեշտ է վճարել ամրագրումից հետո 15 րոպեի ընթացքում։ Նշված ժամկետում վճարում չկատարվելու դեպքում ամրագրումն ինքնաշխատ չեղարկվում է։",
@@ -371,6 +373,35 @@ const TRANSLATIONS = {
     errExtendLimit: "Այս ամրագրումն այլևս հնարավոր չէ երկարացնել",
     errExtendMinutes: "Ընտրեք 30 րոպե կամ 1 ժամ",
     errNoExtendRequest: "Երկարացման դիմում չկա",
+    orderN: "Պատվեր {n}",
+    orderSource_pre: "նախնական",
+    orderSource_guest: "կայքից",
+    orderSource_admin: "մատուցողին",
+    orderWaiting: "Սպասում է ընդունման",
+    orderStage_accepted: "Պատվերն ընդունված է",
+    orderStage_preparing: "Պատրաստման փուլում",
+    orderStage_soon: "Կմատուցվի մի քանի րոպեից",
+    orderStage_served: "Մատուցված է",
+    guestArrived: "Հյուրը ժամանել է",
+    markArrivedBtn: "Հյուրը եկել է",
+    arrivedMarked: "Ժամանումը նշված է։",
+    noOrdersYet: "Պատվեր դեռ չկա։",
+    addOrderBtn: "Ավելացնել պատվեր",
+    orderStageSaved: "Պատվերի փուլը՝ «{stage}»։",
+    orderPickDishes: "Ընտրեք ուտեստները",
+    orderSend: "Ուղարկել պատվերը",
+    orderAdded: "Պատվերն ավելացվեց։",
+    orderMoreBtn: "Պատվիրել",
+    orderSentGuest: "Պատվերն ուղարկվեց ռեստորանին։",
+    errOrderNotArrived: "Պատվիրել կարելի է միայն հյուրի ժամանումից հետո",
+    errBookingEnded: "Ամրագրումն արդեն ավարտվել է",
+    errOrderEmpty: "Ընտրեք գոնե մեկ ուտեստ",
+    errArrivedNotConfirmed: "Ժամանումը կարելի է նշել միայն հաստատված ամրագրման համար",
+    errArrivedNotToday: "Ժամանումը կարելի է նշել միայն ամրագրման օրը",
+    errArrivedAlready: "Ժամանումն արդեն նշված է",
+    errNoOrder: "Այդպիսի պատվեր չկա",
+    errOrderStage: "Պատվերի փուլը սխալ է",
+    errArriveFirst: "Նախ նշեք հյուրի ժամանումը",
     errExtendNotConfirmed: "Երկարացնել կարելի է միայն հաստատված ամրագրումը",
     errExtendEnded: "Ավարտված ամրագրումը հնարավոր չէ երկարացնել",
     errAccessDenied: "Մուտքն արգելված է",
@@ -460,6 +491,8 @@ const TRANSLATIONS = {
     notif_bookingExtended: "{restaurant}, столик {table}, {date}: бронирование продлено, теперь оно длится {time}–{end}.",
     notif_extendRejected: "{restaurant}, столик {table}, {date} {time}: ресторан отклонил запрос продлить бронирование на {minutes} минут.",
     notif_extendRequested: "{guest} просит продлить бронирование на {minutes} минут: {restaurant}, столик {table}, {date} {time}.",
+    notif_orderStage: "{restaurant}, столик {table}: заказ {number} — {stage}.",
+    notif_orderPlaced: "{guest} сделал новый заказ с сайта: {restaurant}, столик {table} (заказ {number}).",
     payRulesTitle: "Порядок оплаты",
     payRule1: "Для подтверждения бронирования необходимо внести депозит в размере 5 000 драмов. Оставшаяся сумма заказа оплачивается в ресторане по окончании обслуживания.",
     payRule2: "Депозит необходимо внести в течение 15 минут после бронирования. Если оплата не поступила в указанный срок, бронирование отменяется автоматически.",
@@ -748,6 +781,35 @@ const TRANSLATIONS = {
     errExtendLimit: "Это бронирование больше нельзя продлить",
     errExtendMinutes: "Выберите 30 минут или 1 час",
     errNoExtendRequest: "Запроса на продление нет",
+    orderN: "Заказ {n}",
+    orderSource_pre: "предварительный",
+    orderSource_guest: "с сайта",
+    orderSource_admin: "через официанта",
+    orderWaiting: "Ожидает принятия",
+    orderStage_accepted: "Заказ принят",
+    orderStage_preparing: "Готовится",
+    orderStage_soon: "Подадим через несколько минут",
+    orderStage_served: "Подан",
+    guestArrived: "Гость пришёл",
+    markArrivedBtn: "Гость пришёл",
+    arrivedMarked: "Приход отмечен.",
+    noOrdersYet: "Заказов пока нет.",
+    addOrderBtn: "Добавить заказ",
+    orderStageSaved: "Этап заказа: «{stage}».",
+    orderPickDishes: "Выберите блюда",
+    orderSend: "Отправить заказ",
+    orderAdded: "Заказ добавлен.",
+    orderMoreBtn: "Заказать",
+    orderSentGuest: "Заказ отправлен в ресторан.",
+    errOrderNotArrived: "Заказать можно только после прихода гостя",
+    errBookingEnded: "Бронирование уже закончилось",
+    errOrderEmpty: "Выберите хотя бы одно блюдо",
+    errArrivedNotConfirmed: "Приход можно отметить только для подтверждённого бронирования",
+    errArrivedNotToday: "Приход можно отметить только в день бронирования",
+    errArrivedAlready: "Приход уже отмечен",
+    errNoOrder: "Такого заказа нет",
+    errOrderStage: "Неверный этап заказа",
+    errArriveFirst: "Сначала отметьте приход гостя",
     errExtendNotConfirmed: "Продлить можно только подтверждённое бронирование",
     errExtendEnded: "Завершённое бронирование нельзя продлить",
     errAccessDenied: "Доступ запрещён",
@@ -837,6 +899,8 @@ const TRANSLATIONS = {
     notif_bookingExtended: "{restaurant}, table {table}, {date}: your booking was extended, it now lasts {time}–{end}.",
     notif_extendRejected: "{restaurant}, table {table}, {date} {time}: the restaurant rejected your request to extend the booking by {minutes} minutes.",
     notif_extendRequested: "{guest} asks to extend the booking by {minutes} minutes: {restaurant}, table {table}, {date} {time}.",
+    notif_orderStage: "{restaurant}, table {table}: order {number} — {stage}.",
+    notif_orderPlaced: "{guest} placed a new order from the site: {restaurant}, table {table} (order {number}).",
     payRulesTitle: "Payment rules",
     payRule1: "To secure a booking, a deposit of AMD 5,000 must be paid. The remaining amount is paid at the restaurant at the end of the visit.",
     payRule2: "The deposit must be paid within 15 minutes of booking. If payment is not received within this time, the booking is cancelled automatically.",
@@ -1124,6 +1188,35 @@ const TRANSLATIONS = {
     errExtendLimit: "This booking can no longer be extended",
     errExtendMinutes: "Choose 30 minutes or 1 hour",
     errNoExtendRequest: "There is no extension request",
+    orderN: "Order {n}",
+    orderSource_pre: "pre-order",
+    orderSource_guest: "from the site",
+    orderSource_admin: "via the waiter",
+    orderWaiting: "Waiting to be accepted",
+    orderStage_accepted: "Order accepted",
+    orderStage_preparing: "Being prepared",
+    orderStage_soon: "Served in a few minutes",
+    orderStage_served: "Served",
+    guestArrived: "The guest has arrived",
+    markArrivedBtn: "Guest arrived",
+    arrivedMarked: "Arrival marked.",
+    noOrdersYet: "No orders yet.",
+    addOrderBtn: "Add order",
+    orderStageSaved: "Order stage: “{stage}”.",
+    orderPickDishes: "Choose the dishes",
+    orderSend: "Send order",
+    orderAdded: "Order added.",
+    orderMoreBtn: "Order",
+    orderSentGuest: "Your order was sent to the restaurant.",
+    errOrderNotArrived: "You can order only after the guest has arrived",
+    errBookingEnded: "The booking has already ended",
+    errOrderEmpty: "Choose at least one dish",
+    errArrivedNotConfirmed: "Arrival can be marked only for a confirmed booking",
+    errArrivedNotToday: "Arrival can be marked only on the day of the booking",
+    errArrivedAlready: "Arrival is already marked",
+    errNoOrder: "There is no such order",
+    errOrderStage: "Wrong order stage",
+    errArriveFirst: "Mark the guest's arrival first",
     errExtendNotConfirmed: "Only a confirmed booking can be extended",
     errExtendEnded: "A finished booking can't be extended",
     errAccessDenied: "Access denied",
@@ -1231,6 +1324,7 @@ function notificationText(notification) {
     const [, month, day] = p.date.split("-").map(Number);
     vars.date = t("formatDate", { day, month: month - 1 });
   }
+  if (p.stage) vars.stage = t("orderStage_" + p.stage);
   return t("notif_" + notification.type, vars);
 }
 
@@ -1335,6 +1429,55 @@ function orderLine(order, tag = "span") {
   const total = order.reduce((sum, dish) => sum + dish.price * dish.qty, 0);
   line.textContent = "🍽 " + order.map((dish) => dish.name + " × " + dish.qty).join(", ") + " · " + formatPrice(total);
   return line;
+}
+
+// Պատվերի փուլերը՝ հերթականությամբ
+const ORDER_STAGES = ["accepted", "preparing", "soon", "served"];
+
+// Ամրագրման մեկ պատվերը՝ համարը, ուտեստները և 4 փուլերը, որոնցից ընթացիկը նշված է։
+// onStage-ով (ադմին էջ) փուլերը կոճակներ են, որոնք փոխում են պատվերի փուլը (առաջ կամ հետ)
+function orderBlock(order, onStage = null) {
+  const box = document.createElement("div");
+  box.className = "order-block";
+
+  const head = document.createElement("div");
+  head.className = "order-block-head";
+  const title = document.createElement("strong");
+  title.textContent = t("orderN", { n: order.number }) + " · " + t("orderSource_" + order.source);
+  head.appendChild(title);
+  if (!order.stage) {
+    const waiting = document.createElement("span");
+    waiting.className = "order-waiting";
+    waiting.textContent = t("orderWaiting");
+    head.appendChild(waiting);
+  }
+
+  const dishes = document.createElement("p");
+  dishes.className = "order-block-dishes";
+  const total = order.items.reduce((sum, dish) => sum + dish.price * dish.qty, 0);
+  dishes.textContent = "🍽 " + order.items.map((dish) => dish.name + " × " + dish.qty).join(", ") + " · " + formatPrice(total);
+
+  const track = document.createElement("ol");
+  track.className = "order-stages";
+  const current = ORDER_STAGES.indexOf(order.stage);
+  ORDER_STAGES.forEach((stage, i) => {
+    const step = document.createElement("li");
+    step.className = "order-stage" + (i < current ? " done" : "") + (i === current ? " current" : "");
+    if (i === current) step.setAttribute("aria-current", "step");
+    if (onStage) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = t("orderStage_" + stage);
+      btn.addEventListener("click", () => onStage(order, stage, track));
+      step.appendChild(btn);
+    } else {
+      step.textContent = t("orderStage_" + stage);
+    }
+    track.appendChild(step);
+  });
+
+  box.append(head, dishes, track);
+  return box;
 }
 
 // Ուտեստները՝ բաժիններով (categories-ի հերթականությամբ). category-ով՝ միայն այդ բաժինը։
@@ -1455,6 +1598,15 @@ const SERVER_MESSAGES = {
   "Այս ամրագրումն այլևս հնարավոր չէ երկարացնել": "errExtendLimit",
   "Ընտրեք 30 րոպե կամ 1 ժամ": "errExtendMinutes",
   "Երկարացման դիմում չկա": "errNoExtendRequest",
+  "Պատվիրել կարելի է միայն հյուրի ժամանումից հետո": "errOrderNotArrived",
+  "Ամրագրումն արդեն ավարտվել է": "errBookingEnded",
+  "Ընտրեք գոնե մեկ ուտեստ": "errOrderEmpty",
+  "Ժամանումը կարելի է նշել միայն հաստատված ամրագրման համար": "errArrivedNotConfirmed",
+  "Ժամանումը կարելի է նշել միայն ամրագրման օրը": "errArrivedNotToday",
+  "Ժամանումն արդեն նշված է": "errArrivedAlready",
+  "Այդպիսի պատվեր չկա": "errNoOrder",
+  "Պատվերի փուլը սխալ է": "errOrderStage",
+  "Նախ նշեք հյուրի ժամանումը": "errArriveFirst",
 };
 
 function translateServer(message) {

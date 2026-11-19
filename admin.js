@@ -247,9 +247,15 @@ function bookingItem(booking) {
   guest.className = "booking-guest";
   guest.textContent = "👤 " + booking.guestName + " · " + booking.guestEmail;
   main.append(title, details, guest);
-  // Ուտեստները, որոնք հյուրը պատվիրել է ամրագրման հետ
-  const order = orderLine(booking.order);
+  // Ուտեստները, որոնք հյուրը պատվիրել է ամրագրման հետ (ժամանումից հետո դրանք երևում են պատվերների մեջ)
+  const order = !booking.arrivedAt && orderLine(booking.order);
   if (order) main.appendChild(order);
+  if (booking.arrivedAt) {
+    const arrived = document.createElement("span");
+    arrived.className = "arrived-line";
+    arrived.textContent = "✓ " + t("guestArrived");
+    main.appendChild(arrived);
+  }
   // Կանխավճարի վիճակը՝ սպասում է վճարման, սառեցված է, գանձված է, վերադարձված է
   const payment = paymentLine(booking.payment);
   if (payment) main.appendChild(payment);
@@ -306,8 +312,170 @@ function bookingItem(booking) {
     item.append(approveBtn, rejectBtn);
   }
 
+  // Ամրագրման օրը ադմինը նշում է, որ հյուրը եկել է
+  if (booking.canMarkArrived) {
+    const arrivedBtn = document.createElement("button");
+    arrivedBtn.type = "button";
+    arrivedBtn.className = "search-btn";
+    arrivedBtn.textContent = t("markArrivedBtn");
+    arrivedBtn.addEventListener("click", () => markArrived(booking, arrivedBtn));
+    item.appendChild(arrivedBtn);
+  }
+
+  // Ժամանումից հետո՝ պատվերները իրենց փուլերով և «Ավելացնել պատվեր» կոճակը
+  if (booking.arrivedAt && booking.status === "confirmed") {
+    const orders = document.createElement("div");
+    orders.className = "booking-orders";
+    booking.orders.forEach((o) => orders.appendChild(orderBlock(o, setOrderStage)));
+    if (!booking.orders.length) {
+      const none = document.createElement("p");
+      none.className = "orders-empty";
+      none.textContent = t("noOrdersYet");
+      orders.appendChild(none);
+    }
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "outline-btn";
+    addBtn.textContent = "+ " + t("addOrderBtn");
+    addBtn.addEventListener("click", () => openAdminOrder(booking));
+    orders.appendChild(addBtn);
+    item.appendChild(orders);
+  }
+
   return item;
 }
+
+async function markArrived(booking, btn) {
+  btn.disabled = true;
+  try {
+    const { ok, result } = await postJson("/api/admin/reservations/arrived", { id: booking.id });
+    showToast(ok ? t("arrivedMarked") : translateServer(result.error));
+    loadAdminBookings();
+  } catch (e) {
+    showToast(t("networkError"));
+    btn.disabled = false;
+  }
+}
+
+// Պատվերի փուլի փոփոխություն. հյուրը ստանում է ծանուցում
+async function setOrderStage(order, stage, track) {
+  if (order.stage === stage) return;
+  track.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  try {
+    const { ok, result } = await postJson("/api/admin/orders/stage", { id: order.id, stage });
+    showToast(ok ? t("orderStageSaved", { stage: t("orderStage_" + stage) }) : translateServer(result.error));
+    loadAdminBookings();
+  } catch (e) {
+    showToast(t("networkError"));
+    track.querySelectorAll("button").forEach((b) => (b.disabled = false));
+  }
+}
+
+// ---------- Ադմինի կողմից պատվերի ավելացում (հյուրը պատվիրել է մատուցողին) ----------
+
+const adminOrderModal = document.getElementById("adminOrderModal");
+const adminOrderInfo = document.getElementById("adminOrderInfo");
+const adminOrderList = document.getElementById("adminOrderList");
+const adminOrderEmpty = document.getElementById("adminOrderEmpty");
+const adminOrderSummary = document.getElementById("adminOrderSummary");
+const adminOrderSubmit = document.getElementById("adminOrderSubmit");
+// { booking, items, categories, cart: { dishId: { id, name, price, qty } } }
+let adminOrder = null;
+
+async function openAdminOrder(booking) {
+  try {
+    const response = await fetch("/api/menu?restaurantId=" + booking.restaurantId);
+    const result = await response.json();
+    if (!response.ok) return showToast(translateServer(result.error));
+    adminOrder = { booking, items: result.items, categories: result.categories, cart: {} };
+    adminOrderInfo.textContent = (booking.restaurantName ? booking.restaurantName + " · " : "") +
+      t("tableN", { n: booking.tableNumber }) + " · 👤 " + booking.guestName;
+    renderAdminOrder();
+    adminOrderModal.hidden = false;
+    adminOrderModal.querySelector(".modal").scrollTop = 0;
+    adminOrderModal.querySelector(".modal-close").focus();
+  } catch (e) {
+    showToast(t("networkError"));
+  }
+}
+
+function setAdminOrderQty(dish, qty) {
+  if (qty <= 0) delete adminOrder.cart[dish.id];
+  else adminOrder.cart[dish.id] = { id: dish.id, name: dish.name, price: dish.price, qty: Math.min(qty, 20) };
+  renderAdminOrder();
+}
+
+function renderAdminOrder() {
+  if (!adminOrder) return;
+  const { items, categories, cart } = adminOrder;
+  adminOrderEmpty.hidden = items.length > 0;
+  renderMenuList(adminOrderList, items, categories, {
+    decorate: (row, dish) => {
+      const qty = cart[dish.id]?.qty || 0;
+      if (qty) row.classList.add("chosen");
+      const control = document.createElement("div");
+      control.className = "dish-qty" + (qty ? " has-qty" : "");
+      const button = (label, aria, delta) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "dish-qty-btn";
+        btn.textContent = label;
+        btn.setAttribute("aria-label", t(aria, { name: dish.name }));
+        btn.disabled = qty + delta > 20;
+        btn.addEventListener("click", () => setAdminOrderQty(dish, qty + delta));
+        return btn;
+      };
+      if (qty) {
+        const count = document.createElement("span");
+        count.className = "dish-qty-count";
+        count.textContent = qty;
+        control.append(button("−", "dishLess", -1), count, button("+", "dishMore", 1));
+      } else {
+        const add = button("+ " + t("dishAdd"), "dishMore", 1);
+        add.classList.add("dish-add-btn");
+        control.appendChild(add);
+      }
+      row.appendChild(control);
+    },
+  });
+  const lines = Object.values(cart);
+  const count = lines.reduce((sum, line) => sum + line.qty, 0);
+  const total = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
+  adminOrderSummary.textContent = count ? t("orderSummary", { n: count, total: formatPrice(total) }) : t("orderPickDishes");
+  adminOrderSubmit.disabled = count === 0;
+}
+
+function closeAdminOrder() {
+  adminOrderModal.hidden = true;
+  adminOrder = null;
+}
+
+adminOrderModal.querySelector(".modal-close").addEventListener("click", closeAdminOrder);
+adminOrderModal.addEventListener("click", (event) => {
+  if (event.target === adminOrderModal) closeAdminOrder();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !adminOrderModal.hidden) closeAdminOrder();
+});
+
+adminOrderSubmit.addEventListener("click", async () => {
+  const order = Object.values(adminOrder.cart).map((line) => ({ id: line.id, qty: line.qty }));
+  adminOrderSubmit.disabled = true;
+  try {
+    const { ok, result } = await postJson("/api/admin/reservations/order", { id: adminOrder.booking.id, order });
+    if (ok) {
+      closeAdminOrder();
+      showToast(t("orderAdded"));
+      loadAdminBookings();
+    } else {
+      showToast(translateServer(result.error));
+      adminOrderSubmit.disabled = false;
+    }
+  } catch (e) {
+    showToast(t("networkError"));
+    adminOrderSubmit.disabled = false;
+  }
+});
 
 // Պատասխան երկարացման դիմումին. answer-ը «approve» է կամ «reject»
 async function answerExtend(booking, answer, buttons) {
@@ -1055,6 +1223,7 @@ function applyLanguage() {
   renderRestaurants();
   renderRejectTemplates();
   renderMenuEditor();
+  renderAdminOrder();
   bell.render();
   restaurantFormTitle.textContent = t(editingRestaurant ? "restaurantFormEdit" : "restaurantFormAdd");
 }

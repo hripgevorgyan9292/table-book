@@ -236,6 +236,21 @@
     </div>
   </div>
 
+  <!-- Պատվերի ավելացում՝ ռեստորանի ճաշացանկից (հյուրը պատվիրել է մատուցողին) -->
+  <div class="modal-overlay" id="adminOrderModal" hidden>
+    <div class="modal menu-modal" role="dialog" aria-modal="true" aria-labelledby="adminOrderTitle">
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="adminOrderTitle" data-i18n="addOrderBtn">Add order</h2>
+      <p class="menu-meta" id="adminOrderInfo"></p>
+      <p class="menu-empty" id="adminOrderEmpty" hidden data-i18n="menuEmpty">The menu isn't ready yet.</p>
+      <div class="menu-list" id="adminOrderList"></div>
+      <div class="menu-order-bar admin-order-bar">
+        <p class="menu-order-total" id="adminOrderSummary"></p>
+        <button class="search-btn" id="adminOrderSubmit" type="button" data-i18n="orderSend">Send order</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Ամրագրման մերժում՝ հյուրին ուղարկվող հաղորդագրությամբ -->
   <div class="modal-overlay" id="rejectModal" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="rejectFormTitle">

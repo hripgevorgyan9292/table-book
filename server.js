@@ -176,6 +176,34 @@ if (!reservationColumns.includes('extend_count')) {
 if (!reservationColumns.includes('extend_rejected')) {
   db.exec('ALTER TABLE reservations ADD COLUMN extend_rejected INTEGER NOT NULL DEFAULT 0');
 }
+// When the admin marked that the guest has arrived; only then can orders be followed
+if (!reservationColumns.includes('arrived_at')) {
+  db.exec('ALTER TABLE reservations ADD COLUMN arrived_at TEXT');
+}
+
+// Each order of a booking with its stage. source: 'pre' (ordered with the booking), 'guest' (from the site
+// at the restaurant), 'admin' (added by the admin). stage: NULL while waiting for the restaurant to accept it,
+// then accepted → preparing → soon → served
+db.exec(`
+  CREATE TABLE IF NOT EXISTS orders (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    reservation_id INTEGER NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    source         TEXT NOT NULL CHECK (source IN ('pre', 'guest', 'admin')),
+    stage          TEXT CHECK (stage IN ('accepted', 'preparing', 'soon', 'served')),
+    created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS orders_reservation ON orders (reservation_id);
+`);
+
+// Ordered dishes now belong to an order. Dishes ordered before this existed become the booking's first order.
+const itemColumns = db.prepare('PRAGMA table_info(reservation_items)').all().map((c) => c.name);
+if (!itemColumns.includes('order_id')) {
+  db.exec('ALTER TABLE reservation_items ADD COLUMN order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE');
+  const withDishes = db.prepare('SELECT DISTINCT reservation_id AS id FROM reservation_items').all();
+  const addOrder = db.prepare("INSERT INTO orders (reservation_id, source) VALUES (?, 'pre')");
+  const linkDishes = db.prepare('UPDATE reservation_items SET order_id = ? WHERE reservation_id = ?');
+  withDishes.forEach(({ id }) => linkDishes.run(addOrder.run(id).lastInsertRowid, id));
+}
 
 // The guest has 2 minutes to read the admin's message, then the rejected booking is removed
 const REJECTED_KEEP_MINUTES = 2;
@@ -649,6 +677,51 @@ function ordersFor(reservationIds) {
   return orders;
 }
 
+// The orders of each booking with their dishes and stage, as { reservationId: [{ id, number, source, stage, items }] }
+function orderGroupsFor(reservationIds) {
+  const groups = {};
+  if (!reservationIds.length) return groups;
+  const marks = reservationIds.map(() => '?').join(',');
+  const orders = db.prepare(`SELECT id, reservation_id, source, stage FROM orders WHERE reservation_id IN (${marks}) ORDER BY id`)
+    .all(...reservationIds);
+  const items = db.prepare(`SELECT order_id, name, price, qty FROM reservation_items WHERE reservation_id IN (${marks}) ORDER BY id`)
+    .all(...reservationIds);
+  orders.forEach((o) => {
+    const list = (groups[o.reservation_id] ||= []);
+    list.push({
+      id: o.id, number: list.length + 1, source: o.source, stage: o.stage,
+      items: items.filter((i) => i.order_id === o.id).map((i) => ({ name: i.name, price: i.price, qty: i.qty })),
+    });
+  });
+  return groups;
+}
+
+// Saves one order of a booking with its dishes; returns the new order's id
+function saveOrder(reservationId, source, lines) {
+  const orderId = db.prepare('INSERT INTO orders (reservation_id, source) VALUES (?, ?)').run(reservationId, source).lastInsertRowid;
+  const insertLine = db.prepare('INSERT INTO reservation_items (reservation_id, order_id, name, price, qty) VALUES (?, ?, ?, ?, ?)');
+  lines.forEach((line) => insertLine.run(reservationId, orderId, line.name, line.price, line.qty));
+  return Number(orderId);
+}
+
+// The stages an order goes through; the admin can move it to any of them, also back
+const ORDER_STAGES = ['accepted', 'preparing', 'soon', 'served'];
+
+// Today's date on the server, as YYYY-MM-DD
+function todayDate() {
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+}
+
+// Why a new order can't be added to this booking right now, or null if it can
+function newOrderError(reservation) {
+  if (reservation.status !== 'confirmed' || !reservation.arrived_at) {
+    return 'Պատվիրել կարելի է միայն հյուրի ժամանումից հետո';
+  }
+  if (hasEnded(reservation)) return 'Ամրագրումն արդեն ավարտվել է';
+  return null;
+}
+
 // Checks the guest's order against the restaurant's menu; returns the dishes to save, or an error text
 function readOrder(order, restaurantId) {
   if (order == null) return { lines: [] };
@@ -1097,7 +1170,8 @@ const routes = {
 
     const reservations = db.prepare(`
       SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
-        COALESCE(rest.name, '') AS restaurantName, r.extend_request, r.extend_count, r.extend_rejected
+        COALESCE(rest.name, '') AS restaurantName, r.extend_request, r.extend_count, r.extend_rejected,
+        t.restaurant_id AS restaurantId, r.arrived_at AS arrivedAt
       FROM reservations r
       JOIN tables t ON t.id = r.table_id
       LEFT JOIN restaurants rest ON rest.id = t.restaurant_id
@@ -1107,14 +1181,40 @@ const routes = {
     // Bookings whose hour is over (the guests have been served) are no longer shown; they stay in the database
     const upcoming = reservations.filter((r) => !hasEnded(r));
     const orders = ordersFor(upcoming.map((r) => r.id));
+    const groups = orderGroupsFor(upcoming.map((r) => r.id));
     sendJson(res, 200, {
       reservations: upcoming.map(({ extend_request, extend_count, extend_rejected, ...r }) => ({
         ...r, order: orders[r.id] || [], payment: paymentView(paymentOf(r.id)),
         canCancel: r.status !== 'cancelled' && canStillCancel(r),
         extendRequest: extend_request,
         canExtend: canRequestExtend({ ...r, extend_request, extend_count, extend_rejected }),
+        orders: groups[r.id] || [],
+        canOrder: r.status === 'confirmed' && !!r.arrivedAt,
       })),
     });
+  },
+
+  // The guest orders more dishes from the site while at the restaurant (after the admin marked the arrival)
+  'POST /api/reservations/order': async (req, res) => {
+    const user = getSessionUser(req);
+    if (!user) return sendJson(res, 401, { error: 'Մուտք գործեք' });
+
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const reservation = Number.isInteger(id) && db.prepare(`
+      SELECT r.*, t.restaurant_id FROM reservations r JOIN tables t ON t.id = r.table_id WHERE r.id = ? AND r.user_id = ?
+    `).get(id, user.id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    const notAllowed = newOrderError(reservation);
+    if (notAllowed) return sendJson(res, 400, { error: notAllowed });
+    const { lines, error } = readOrder(body.order, reservation.restaurant_id);
+    if (error) return sendJson(res, 400, { error });
+    if (!lines.length) return sendJson(res, 400, { error: 'Ընտրեք գոնե մեկ ուտեստ' });
+
+    const orderId = saveOrder(id, 'guest', lines);
+    notify('admin', null, 'orderPlaced', { ...bookingInfo(id), number: orderGroupsFor([id])[id].length });
+    sendJson(res, 201, { order: { id: orderId } });
   },
 
   // The guest asks the restaurant to extend a confirmed booking by 30 minutes or 1 hour
@@ -1158,7 +1258,7 @@ const routes = {
 
     const reservations = db.prepare(`
       SELECT r.id, r.date, r.time, r.duration, r.guests, r.status, r.reject_reason AS rejectReason, t.number AS tableNumber,
-        r.extend_request AS extendRequest,
+        r.extend_request AS extendRequest, r.arrived_at AS arrivedAt, t.restaurant_id AS restaurantId,
         COALESCE(rest.name, '') AS restaurantName, COALESCE(rest.city, '') AS restaurantCity,
         u.first_name || ' ' || u.last_name AS guestName, u.email AS guestEmail
       FROM reservations r
@@ -1171,9 +1271,79 @@ const routes = {
     // Same rule as the guests' list: bookings whose hour is over are not shown
     const upcoming = reservations.filter((r) => !hasEnded(r));
     const orders = ordersFor(upcoming.map((r) => r.id));
+    const groups = orderGroupsFor(upcoming.map((r) => r.id));
+    const today = todayDate();
     sendJson(res, 200, {
-      reservations: upcoming.map((r) => ({ ...r, order: orders[r.id] || [], payment: paymentView(paymentOf(r.id)) })),
+      reservations: upcoming.map((r) => ({
+        ...r, order: orders[r.id] || [], payment: paymentView(paymentOf(r.id)),
+        orders: groups[r.id] || [],
+        // The arrival is marked on the day of the booking
+        canMarkArrived: r.status === 'confirmed' && !r.arrivedAt && r.date === today,
+      })),
     });
+  },
+
+  // The admin marks that the guest has arrived; from now on orders can be placed and followed
+  'POST /api/admin/reservations/arrived': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = Number((await readJson(req)).id);
+    const reservation = Number.isInteger(id) && db.prepare('SELECT * FROM reservations WHERE id = ?').get(id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    if (reservation.status !== 'confirmed') {
+      return sendJson(res, 400, { error: 'Ժամանումը կարելի է նշել միայն հաստատված ամրագրման համար' });
+    }
+    if (reservation.date !== todayDate()) {
+      return sendJson(res, 400, { error: 'Ժամանումը կարելի է նշել միայն ամրագրման օրը' });
+    }
+    if (hasEnded(reservation)) return sendJson(res, 400, { error: 'Ամրագրումն արդեն ավարտվել է' });
+    if (reservation.arrived_at) return sendJson(res, 400, { error: 'Ժամանումն արդեն նշված է' });
+
+    db.prepare("UPDATE reservations SET arrived_at = datetime('now') WHERE id = ?").run(id);
+    sendJson(res, 200, { reservation: { id, arrived: true } });
+  },
+
+  // The admin adds an order the guest gave the waiter
+  'POST /api/admin/reservations/order': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const reservation = Number.isInteger(id) && db.prepare(`
+      SELECT r.*, t.restaurant_id FROM reservations r JOIN tables t ON t.id = r.table_id WHERE r.id = ?
+    `).get(id);
+
+    if (!reservation) return sendJson(res, 404, { error: 'Այդպիսի ամրագրում չկա' });
+    const notAllowed = newOrderError(reservation);
+    if (notAllowed) return sendJson(res, 400, { error: notAllowed });
+    const { lines, error } = readOrder(body.order, reservation.restaurant_id);
+    if (error) return sendJson(res, 400, { error });
+    if (!lines.length) return sendJson(res, 400, { error: 'Ընտրեք գոնե մեկ ուտեստ' });
+
+    sendJson(res, 201, { order: { id: saveOrder(id, 'admin', lines) } });
+  },
+
+  // The admin sets the stage of an order (forward or back); the guest gets a notification
+  'POST /api/admin/orders/stage': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readJson(req);
+    const id = Number(body.id);
+    const stage = asText(body.stage);
+    const order = Number.isInteger(id) && db.prepare(`
+      SELECT o.*, r.status, r.arrived_at FROM orders o JOIN reservations r ON r.id = o.reservation_id WHERE o.id = ?
+    `).get(id);
+
+    if (!order) return sendJson(res, 404, { error: 'Այդպիսի պատվեր չկա' });
+    if (!ORDER_STAGES.includes(stage)) return sendJson(res, 400, { error: 'Պատվերի փուլը սխալ է' });
+    if (order.status !== 'confirmed' || !order.arrived_at) {
+      return sendJson(res, 400, { error: 'Նախ նշեք հյուրի ժամանումը' });
+    }
+    if (order.stage === stage) return sendJson(res, 200, { order: { id, stage } });
+
+    db.prepare('UPDATE orders SET stage = ? WHERE id = ?').run(stage, id);
+    const info = bookingInfo(order.reservation_id);
+    const number = orderGroupsFor([order.reservation_id])[order.reservation_id].findIndex((o) => o.id === id) + 1;
+    notify('user', info.userId, 'orderStage', { ...info, number, stage });
+    sendJson(res, 200, { order: { id, stage } });
   },
 
   // A restaurant's tables on a given date, each with its bookings that day.
@@ -1382,8 +1552,7 @@ const routes = {
       const { lastInsertRowid } = db
         .prepare('INSERT INTO reservations (user_id, table_id, date, time, guests, duration) VALUES (?, ?, ?, ?, ?, ?)')
         .run(user.id, table.id, date, time, guests, BOOKING_MINUTES);
-      const insertLine = db.prepare('INSERT INTO reservation_items (reservation_id, name, price, qty) VALUES (?, ?, ?, ?)');
-      order.forEach((line) => insertLine.run(lastInsertRowid, line.name, line.price, line.qty));
+      if (order.length) saveOrder(lastInsertRowid, 'pre', order);
       const { lastInsertRowid: paymentId } = db.prepare(`
         INSERT INTO payments (reservation_id, amount, expires_at) VALUES (?, ?, datetime('now', ?))
       `).run(lastInsertRowid, DEPOSIT_AMOUNT, `+${PAYMENT_MINUTES} minutes`);

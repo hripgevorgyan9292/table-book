@@ -383,6 +383,20 @@
     </div>
   </div>
 
+  <!-- Ամրագրման երկարացման դիմում՝ +30 րոպե կամ +1 ժամ -->
+  <div class="modal-overlay" id="extendModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="extendTitle">
+      <button class="modal-close" type="button" aria-label="Close" data-i18n-aria="closeAria">×</button>
+      <h2 id="extendTitle" data-i18n="extendTitle">Extend booking</h2>
+      <p class="extend-booking-info" id="extendBookingInfo"></p>
+      <div class="extend-options">
+        <button class="search-btn" type="button" data-minutes="30" data-i18n="extend30">+30 min</button>
+        <button class="search-btn" type="button" data-minutes="60" data-i18n="extend60">+1 hour</button>
+      </div>
+      <p class="extend-note" data-i18n="extendNote">The restaurant will approve or reject the request.</p>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" hidden></div>
 
   <footer>

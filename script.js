@@ -57,7 +57,7 @@ document.querySelectorAll("[data-open]").forEach((btn) => {
 });
 
 // Փակել, երբ սեղմում են պատուհանից դուրս՝ մուգ ֆոնի վրա
-[signupModal, loginModal, document.getElementById("menuModal")].forEach((modal) => {
+[signupModal, loginModal, document.getElementById("menuModal"), document.getElementById("extendModal")].forEach((modal) => {
   modal.addEventListener("click", (event) => {
     if (event.target === modal) closeModal();
   });
@@ -768,9 +768,56 @@ function renderMyBookings() {
       item.appendChild(closed);
     }
 
+    // Երկարացում. դիմումն ուղարկված է, կամ «Երկարացնել ամրագրումը» կոճակը
+    if (booking.status === "confirmed" && booking.extendRequest) {
+      const sent = document.createElement("span");
+      sent.className = "extend-sent";
+      sent.textContent = t("extendSent", { what: t(booking.extendRequest === 60 ? "extend60" : "extend30") });
+      item.appendChild(sent);
+    } else if (booking.canExtend) {
+      const extendBtn = document.createElement("button");
+      extendBtn.type = "button";
+      extendBtn.className = "cancel-btn";
+      extendBtn.textContent = t("extendBtn");
+      extendBtn.addEventListener("click", () => openExtendForm(booking));
+      item.appendChild(extendBtn);
+    }
+
     myBookingsList.appendChild(item);
   });
 }
+
+// ---------- Ամրագրման երկարացման դիմում ----------
+
+const extendModal = document.getElementById("extendModal");
+const extendBookingInfo = document.getElementById("extendBookingInfo");
+let extendingBooking = null;
+
+function openExtendForm(booking) {
+  extendingBooking = booking;
+  extendBookingInfo.textContent = (booking.restaurantName ? booking.restaurantName + " · " : "") +
+    t("tableN", { n: booking.tableNumber }) + " · " + formatDate(booking.date) + ", " + timeRange(booking.time, booking.duration);
+  setMyBookingsOpen(false);
+  openModal(extendModal);
+}
+
+extendModal.querySelectorAll("[data-minutes]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const buttons = extendModal.querySelectorAll("[data-minutes]");
+    buttons.forEach((b) => (b.disabled = true));
+    try {
+      const { ok, result } = await postJson("/api/reservations/extend-request", {
+        id: extendingBooking.id, minutes: Number(btn.dataset.minutes),
+      });
+      showToast(ok ? t("extendRequestSent") : translateServer(result.error));
+      if (ok) closeModal();
+      loadMyBookings();
+    } catch (e) {
+      showToast(t("networkError"));
+    }
+    buttons.forEach((b) => (b.disabled = false));
+  });
+});
 
 async function cancelBooking(booking, btn) {
   const question = t("cancelConfirm", { n: booking.tableNumber, date: formatDate(booking.date), time: timeRange(booking.time, booking.duration) });

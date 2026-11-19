@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --watch --env-file-if-exists=.env server.js",
     "make-admin": "node make-admin.js",
     "seed": "node seeders/super-admin.js",
     "seed:restaurants": "node seeders/restaurants.js",

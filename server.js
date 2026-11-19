@@ -1714,6 +1714,14 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// If the port is already taken (usually the server is already running), say so plainly
+server.on('error', (err) => {
+  if (err.code !== 'EADDRINUSE') throw err;
+  console.error(`Պորտ ${PORT}-ն արդեն զբաղված է. սերվերը, հավանաբար, արդեն աշխատում է։`);
+  console.error(`Բացեք http://localhost:${PORT} կամ կանգնեցրեք հին սերվերը (Ctrl+C այն տերմինալում)։`);
+  process.exit(1);
+});
+
 server.listen(PORT, () => {
   console.log(`TableBook running at http://localhost:${PORT}/`);
 });

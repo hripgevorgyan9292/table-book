@@ -13,6 +13,8 @@ const paymentId = Number(new URLSearchParams(location.search).get("id"));
 let state = null; // { payment, booking }
 let timerId = null;
 let resultKey = null;
+// Վճարման էջը օգտագործում է գլխավոր էջի մուտքը (access_token, refresh_token)
+const auth = createAuth("");
 
 // Բաց/մուգ ռեժիմ՝ նույնը, ինչ մյուս էջերում
 function applyTheme(theme) {
@@ -94,7 +96,7 @@ function showResult(key) {
 async function loadPayment() {
   if (!Number.isInteger(paymentId) || paymentId <= 0) return showResult("missing");
   try {
-    const response = await fetch("/api/payment?id=" + paymentId);
+    const response = await auth.fetch("/api/payment?id=" + paymentId);
     const result = await response.json();
     if (response.status === 401) return showResult("login");
     if (response.status === 403) return showResult("localOnly");
@@ -157,7 +159,7 @@ payForm.addEventListener("submit", async (event) => {
   };
   payBtn.disabled = true;
   try {
-    const response = await fetch("/api/payment/pay", {
+    const response = await auth.fetch("/api/payment/pay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

@@ -1314,6 +1314,90 @@ function dishThumb(dish) {
   return thumb;
 }
 
+// ---------- Մուտքի token-ները localStorage-ում (գլխավոր, ադմին և վճարման էջերի համար) ----------
+
+// prefix-ը բաժանում է էջերի մուտքերը. "" գլխավոր էջի համար (access_token, refresh_token),
+// "admin_"՝ ադմին էջի համար (admin_access_token, admin_refresh_token)։
+// auth.fetch-ը նույն fetch-ն է, բայց ամեն հարցման հետ ուղարկում է access token-ը
+// «Authorization: Bearer ...» header-ով։ Եթե այն ժամկետանց է (15 րոպե), նախ refresh token-ով
+// ստանում է նորը /api/refresh-ից, հետո միայն ուղարկում հարցումը։
+function createAuth(prefix) {
+  const ACCESS = prefix + "access_token";
+  const REFRESH = prefix + "refresh_token";
+
+  const read = (key) => {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  };
+  const write = (key, value) => {
+    try {
+      if (value) localStorage.setItem(key, value);
+      else localStorage.removeItem(key);
+    } catch (e) {}
+  };
+
+  // Token-ի մեջտեղի մասում գրված է նրա ժամկետը (exp, վայրկյաններով). 10 վայրկյան պաշարով
+  function isExpired(token) {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return payload.exp * 1000 <= Date.now() + 10000;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  // Մի քանի հարցում միաժամանակ ժամկետանց token գտնելիս՝ թարմացումը կատարվում է մեկ անգամ
+  let refreshing = null;
+
+  async function accessToken() {
+    const access = read(ACCESS);
+    if (access && !isExpired(access)) return access;
+    const refresh = read(REFRESH);
+    if (!refresh) return null;
+    if (!refreshing) {
+      refreshing = fetch("/api/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: refresh }),
+      })
+        .then(async (response) => {
+          if (response.ok) {
+            write(ACCESS, (await response.json()).accessToken);
+          } else if (response.status === 401) {
+            // Refresh token-ն էլ է անվավեր (ժամկետն անցել է կամ ելք է արվել). մուտքը ավարտված է
+            write(ACCESS, null);
+            write(REFRESH, null);
+          }
+        })
+        .catch(() => {})
+        .finally(() => { refreshing = null; });
+    }
+    await refreshing;
+    return read(ACCESS);
+  }
+
+  async function authFetch(url, options = {}) {
+    const token = await accessToken();
+    const headers = new Headers(options.headers);
+    if (token) headers.set("Authorization", "Bearer " + token);
+    return fetch(url, { ...options, headers });
+  }
+
+  return {
+    fetch: authFetch,
+    // Մուտքից կամ գրանցումից հետո՝ սերվերի տված երկու token-ները պահել
+    save(result) {
+      write(ACCESS, result.accessToken);
+      write(REFRESH, result.refreshToken);
+    },
+    // Ելքից հետո՝ երկուսն էլ ջնջել
+    clear() {
+      write(ACCESS, null);
+      write(REFRESH, null);
+    },
+    refreshToken: () => read(REFRESH),
+  };
+}
+
 // ---------- Ծանուցումներ (🔔)՝ ընդհանուր գլխավոր և ադմին էջերի համար ----------
 
 // Ծանուցման տեքստը ընտրված լեզվով՝ նրա տեսակից և տվյալներից (ռեստորան, սեղան, օր, ժամ, գումար)
@@ -1329,8 +1413,8 @@ function notificationText(notification) {
 }
 
 // Զանգակը վերևի ժապավենում. ցույց է տալիս չկարդացածների քանակը, բացելիս՝ ցուցակը,
-// իսկ նոր ծանուցում գալիս՝ նաև հաղորդագրություն (onNew)
-function createNotificationBell({ listUrl, readUrl, onNew }) {
+// իսկ նոր ծանուցում գալիս՝ նաև հաղորդագրություն (onNew)։ request-ը էջի auth.fetch-ն է (token-ով)
+function createNotificationBell({ listUrl, readUrl, onNew, request }) {
   const wrap = document.getElementById("notif");
   const button = document.getElementById("notifBtn");
   const count = document.getElementById("notifCount");
@@ -1362,7 +1446,7 @@ function createNotificationBell({ listUrl, readUrl, onNew }) {
 
   async function load() {
     try {
-      const response = await fetch(listUrl);
+      const response = await request(listUrl);
       if (!response.ok) return;
       items = (await response.json()).notifications;
       const newest = items[0];
@@ -1377,7 +1461,7 @@ function createNotificationBell({ listUrl, readUrl, onNew }) {
   async function markRead() {
     if (!items.some((n) => !n.read)) return;
     try {
-      await fetch(readUrl, { method: "POST" });
+      await request(readUrl, { method: "POST" });
       items = items.map((n) => ({ ...n, read: true }));
       count.hidden = true;
     } catch (e) {}

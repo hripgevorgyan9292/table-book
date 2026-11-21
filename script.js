@@ -67,8 +67,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeModal();
 });
 
+// Գլխավոր էջի token-ները՝ localStorage-ում access_token և refresh_token անուններով
+const auth = createAuth("");
+
 async function postJson(url, data) {
-  const response = await fetch(url, {
+  const response = await auth.fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -142,6 +145,7 @@ signupForm.addEventListener("submit", async (event) => {
       return;
     }
 
+    auth.save(result);
     signupForm.reset();
     closeModal();
     showUser(result.user);
@@ -178,6 +182,7 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
+    auth.save(result);
     loginForm.reset();
     closeModal();
     showUser(result.user);
@@ -191,7 +196,8 @@ loginForm.addEventListener("submit", async (event) => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
-    await postJson("/api/logout", {});
+    await postJson("/api/logout", { refreshToken: auth.refreshToken() });
+    auth.clear();
     showGuest();
     showToast(t("loggedOut"));
   } catch (e) {
@@ -238,6 +244,7 @@ function showToast(message) {
 const bell = createNotificationBell({
   listUrl: "/api/notifications",
   readUrl: "/api/notifications/read",
+  request: auth.fetch,
   onNew: (text) => {
     showToast(text);
     loadMyBookings();
@@ -251,7 +258,7 @@ if (new URLSearchParams(location.search).get("paid") === "1") {
 }
 
 // Էջը բացելիս սերվերից ստուգել՝ արդյոք օգտատերը մուտք է գործած
-fetch("/api/me")
+auth.fetch("/api/me")
   .then((response) => response.json())
   .then((result) => { if (result.user) showUser(result.user); })
   .catch(() => {});
@@ -490,7 +497,7 @@ async function searchTables() {
   setStatus("statusLoading");
   searchBtn.disabled = true;
   try {
-    const response = await fetch("/api/tables?restaurantId=" + search.restaurantId +
+    const response = await auth.fetch("/api/tables?restaurantId=" + search.restaurantId +
       "&date=" + encodeURIComponent(search.date) + "&time=" + encodeURIComponent(search.time));
     const result = await response.json();
     if (!response.ok) {
@@ -569,7 +576,7 @@ bookBtn.addEventListener("click", async () => {
 
   bookBtn.disabled = true;
   try {
-    const response = await fetch("/api/reservations", {
+    const response = await auth.fetch("/api/reservations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -660,7 +667,7 @@ function bookingState(booking) {
 
 async function loadMyBookings() {
   try {
-    const response = await fetch("/api/reservations");
+    const response = await auth.fetch("/api/reservations");
     if (!response.ok) return;
     const previous = new Map(lastBookings.map((b) => [b.id, bookingState(b)]));
     lastBookings = (await response.json()).reservations;
@@ -885,7 +892,7 @@ function pickShownRestaurants() {
 
 async function loadRestaurants() {
   try {
-    const response = await fetch("/api/restaurants");
+    const response = await auth.fetch("/api/restaurants");
     if (!response.ok) return;
     restaurants = (await response.json()).restaurants;
     fillCitySelects();
@@ -1100,7 +1107,7 @@ bookRestaurant.addEventListener("change", renderOrderPanel);
 // և ընտրված ուտեստները պահվում են առանձին, ոչ թե ամրագրման պատվերի հետ
 async function openMenu(restaurant, orderFor = null) {
   try {
-    const response = await fetch("/api/menu?restaurantId=" + restaurant.id);
+    const response = await auth.fetch("/api/menu?restaurantId=" + restaurant.id);
     const result = await response.json();
     if (!response.ok) return showToast(translateServer(result.error));
     menuState = {

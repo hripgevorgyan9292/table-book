@@ -10,6 +10,8 @@ const deniedView = document.getElementById("deniedView");
 const panelView = document.getElementById("panelView");
 const loginForm = document.getElementById("adminLoginForm");
 let currentUser = null;
+// Ադմին էջի token-ները՝ localStorage-ում admin_access_token և admin_refresh_token անուններով
+const auth = createAuth("admin_");
 
 // Բաց/մուգ ռեժիմ՝ նույնը, ինչ գլխավոր էջում (ընտրությունը ընդհանուր է)
 function applyTheme(theme) {
@@ -50,6 +52,7 @@ function showView(user) {
 const bell = createNotificationBell({
   listUrl: "/api/admin/notifications",
   readUrl: "/api/admin/notifications/read",
+  request: auth.fetch,
   onNew: (text) => {
     showToast(text);
     loadAdminBookings();
@@ -83,7 +86,7 @@ loginForm.addEventListener("submit", async (event) => {
   submitBtn.disabled = true;
   try {
     // Ադմինի առանձին մուտք. հյուրի հաշիվը մերժվում է և մուտք չի գործում
-    const response = await fetch("/api/admin/login", {
+    const response = await auth.fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -94,6 +97,7 @@ loginForm.addEventListener("submit", async (event) => {
       showError("adminPassword", response.status === 403 ? t("notAdminAccount") : translateServer(result.error));
       return;
     }
+    auth.save(result);
     loginForm.reset();
     showView(result.user);
   } catch (e) {
@@ -105,8 +109,13 @@ loginForm.addEventListener("submit", async (event) => {
 
 logoutBtn.addEventListener("click", async () => {
   try {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/admin/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: auth.refreshToken() }),
+    });
   } catch (e) {}
+  auth.clear();
   showView(null);
 });
 
@@ -123,7 +132,7 @@ function showToast(message) {
 }
 
 async function postJson(url, data) {
-  const response = await fetch(url, {
+  const response = await auth.fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -152,7 +161,7 @@ let adminBookings = [];
 
 async function loadAdminBookings() {
   try {
-    const response = await fetch("/api/admin/reservations");
+    const response = await auth.fetch("/api/admin/reservations");
     if (!response.ok) return;
     adminBookings = (await response.json()).reservations;
     renderAdminBookings();
@@ -384,7 +393,7 @@ let adminOrder = null;
 
 async function openAdminOrder(booking) {
   try {
-    const response = await fetch("/api/menu?restaurantId=" + booking.restaurantId);
+    const response = await auth.fetch("/api/menu?restaurantId=" + booking.restaurantId);
     const result = await response.json();
     if (!response.ok) return showToast(translateServer(result.error));
     adminOrder = { booking, items: result.items, categories: result.categories, cart: {} };
@@ -629,7 +638,7 @@ async function loadAdminTables() {
     return;
   }
   try {
-    const response = await fetch("/api/admin/tables?restaurantId=" + atRestaurant.value +
+    const response = await auth.fetch("/api/admin/tables?restaurantId=" + atRestaurant.value +
       "&date=" + encodeURIComponent(todayDate()));
     const result = await response.json();
     if (!response.ok) {
@@ -735,7 +744,7 @@ function pickShownRestaurants() {
 // keep՝ պահել ցույց տրվողները (ավելացնելուց, փոխելուց, ջնջելուց հետո), addedId՝ նոր ռեստորանը դնել առաջինը
 async function loadRestaurants({ keep = false, addedId = null } = {}) {
   try {
-    const response = await fetch("/api/restaurants");
+    const response = await auth.fetch("/api/restaurants");
     if (!response.ok) return;
     restaurants = (await response.json()).restaurants;
     fillCitySelects();
@@ -945,7 +954,7 @@ async function openMenuEditor(restaurant) {
 
 async function loadMenuEditor() {
   try {
-    const response = await fetch("/api/menu?restaurantId=" + menuEditor.restaurant.id);
+    const response = await auth.fetch("/api/menu?restaurantId=" + menuEditor.restaurant.id);
     const result = await response.json();
     if (!response.ok) {
       showToast(translateServer(result.error));
@@ -1237,7 +1246,7 @@ langSelect.addEventListener("change", () => {
 applyLanguage();
 
 // Էջը բացելիս ստուգել՝ արդյոք արդեն մուտք է գործած
-fetch("/api/admin/me")
+auth.fetch("/api/admin/me")
   .then((response) => response.json())
   .then((result) => showView(result.user))
   .catch(() => showView(null));

@@ -85,6 +85,23 @@ JWT_SECRET=երկար-պատահական-բանալի
 - Մուտք գործեք Super Admin-ի email-ով և գաղտնաբառով։
 - Ադմինի էջը **հյուրերի հաշիվներ չի ընդունում**։
 
+## Մուտքի թոքենները
+
+Մուտքից կամ գրանցումից հետո սերվերը պատասխանում տալիս է երկու թոքեն, և էջը դրանք պահում է `localStorage`-ում։
+
+| Էջ | `localStorage`-ի բանալիներ |
+|---|---|
+| Գլխավոր և վճարման էջեր | `access_token`, `refresh_token` |
+| Ադմին էջ | `admin_access_token`, `admin_refresh_token` |
+
+- **Access թոքենը** (15 րոպե) ուղարկվում է ամեն հարցման հետ՝ `Authorization: Bearer <թոքեն>` header-ով։
+- **Refresh թոքենը** (30 օր) օգտագործվում է նոր access թոքեն ստանալու համար՝ `POST /api/refresh`, body՝ `{ "refreshToken": "..." }`։
+- **Ելքի** ժամանակ (`POST /api/logout` կամ `/api/admin/logout`) refresh թոքենը ուղարկվում է body-ում և չեղարկվում բազայում, իսկ էջը ջնջում է երկու թոքենը `localStorage`-ից։
+
+Օրինակ՝ Postman-ով.
+1. `POST /api/login`, body՝ `{ "email": "...", "password": "..." }` → պատասխանում՝ `accessToken` և `refreshToken`։
+2. Մյուս հարցումներում ավելացրեք header՝ `Authorization: Bearer <accessToken>`։
+
 ## Փորձնական վճարում
 
 Վճարումը **փորձնական է**. իրական գումար չի գանձվում, և այն աշխատում է միայն `localhost`-ով։

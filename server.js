@@ -353,11 +353,14 @@ function readJson(req) {
 
 // ---------- Login with JWT (JSON Web Tokens) ----------
 //
-// After logging in, the browser gets two signed tokens in HttpOnly cookies (JavaScript can't read them):
-// - access token, 15 minutes: sent with every request and checked by its signature alone;
-// - refresh token, 30 days: when the access token has expired, the server uses it to issue a new one,
-//   so the user stays logged in without typing the password again. Logging out revokes it.
-// The main page ('user') and the admin page ('admin') keep separate cookies, so a guest and an admin
+// After logging in, the server returns two signed tokens in the response body; the page keeps them
+// in localStorage:
+// - access token, 15 minutes: sent with every request in the "Authorization: Bearer <token>" header
+//   and checked by its signature alone;
+// - refresh token, 30 days: when the access token has expired, the page sends it to POST /api/refresh
+//   and gets a new access token, so the user stays logged in without typing the password again.
+//   Logging out revokes it.
+// The main page ('user') and the admin page ('admin') keep separate tokens, so a guest and an admin
 // can be signed in at the same time in one browser without logging each other out.
 
 // The signing key: JWT_SECRET from the environment, otherwise a random key kept in data/jwt-secret
@@ -368,10 +371,7 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
   return fs.readFileSync(file, 'utf8').trim();
 })();
 
-const TOKEN_COOKIES = {
-  user: { access: 'access_token', refresh: 'refresh_token' },
-  admin: { access: 'admin_access_token', refresh: 'admin_refresh_token' },
-};
+const AUDIENCES = ['user', 'admin'];
 
 const base64url = (data) => Buffer.from(data).toString('base64url');
 const jwtSignature = (data) => crypto.createHmac('sha256', JWT_SECRET).update(data).digest('base64url');
@@ -400,17 +400,15 @@ function verifyJwt(token, type, audience) {
   }
 }
 
-function readCookie(req, name) {
-  const match = new RegExp(`(?:^|;\\s*)${name}=([A-Za-z0-9._-]+)`).exec(req.headers.cookie || '');
+// The token from the "Authorization: Bearer <token>" header, or null
+function readBearer(req) {
+  const match = /^Bearer ([A-Za-z0-9._-]+)$/.exec(req.headers.authorization || '');
   return match ? match[1] : null;
 }
 
-const tokenCookie = (name, value, seconds) => `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${seconds}`;
-
-function accessTokenCookie(userId, audience) {
+function signAccessToken(userId, audience) {
   const now = Math.floor(Date.now() / 1000);
-  const token = signJwt({ sub: userId, aud: audience, type: 'access', iat: now, exp: now + ACCESS_MINUTES * 60 });
-  return tokenCookie(TOKEN_COOKIES[audience].access, token, ACCESS_MINUTES * 60);
+  return signJwt({ sub: userId, aud: audience, type: 'access', iat: now, exp: now + ACCESS_MINUTES * 60 });
 }
 
 // Login: a new access token and a new refresh token (its id is saved so logging out can revoke it)
@@ -420,34 +418,22 @@ function issueTokens(userId, audience) {
   const exp = now + REFRESH_DAYS * 24 * 60 * 60;
   db.prepare("INSERT INTO refresh_tokens (jti, user_id, audience, expires_at) VALUES (?, ?, ?, datetime(?, 'unixepoch'))")
     .run(jti, userId, audience, exp);
-  const refresh = signJwt({ sub: userId, aud: audience, type: 'refresh', jti, iat: now, exp });
-  return [accessTokenCookie(userId, audience), tokenCookie(TOKEN_COOKIES[audience].refresh, refresh, exp - now)];
+  const refreshToken = signJwt({ sub: userId, aud: audience, type: 'refresh', jti, iat: now, exp });
+  return { accessToken: signAccessToken(userId, audience), refreshToken };
 }
 
-// Logout: the refresh token is revoked and both cookies are cleared
-function revokeTokens(req, audience) {
-  const refresh = verifyJwt(readCookie(req, TOKEN_COOKIES[audience].refresh), 'refresh', audience);
+// The payload of a valid refresh token that has not been revoked (logged out), for the given audience
+function verifyRefreshToken(token, audience) {
+  const refresh = verifyJwt(token, 'refresh', audience);
+  if (!refresh) return null;
+  const known = db.prepare("SELECT 1 FROM refresh_tokens WHERE jti = ? AND expires_at > datetime('now')").get(refresh.jti);
+  return known ? refresh : null;
+}
+
+// Logout: the refresh token sent in the request body is revoked
+function revokeTokens(token, audience) {
+  const refresh = verifyJwt(typeof token === 'string' ? token : '', 'refresh', audience);
   if (refresh) db.prepare('DELETE FROM refresh_tokens WHERE jti = ?').run(refresh.jti);
-  return [tokenCookie(TOKEN_COOKIES[audience].access, '', 0), tokenCookie(TOKEN_COOKIES[audience].refresh, '', 0)];
-}
-
-// Before an API request: if the access token is missing or expired but the refresh token is still valid
-// (and not revoked), a new access token is issued and used for this request too
-function refreshAccessTokens(req, res) {
-  const setCookies = [];
-  for (const audience of Object.keys(TOKEN_COOKIES)) {
-    const names = TOKEN_COOKIES[audience];
-    if (verifyJwt(readCookie(req, names.access), 'access', audience)) continue;
-    const refresh = verifyJwt(readCookie(req, names.refresh), 'refresh', audience);
-    if (!refresh) continue;
-    const known = db.prepare("SELECT 1 FROM refresh_tokens WHERE jti = ? AND expires_at > datetime('now')").get(refresh.jti);
-    if (!known) continue;
-    const cookie = accessTokenCookie(refresh.sub, audience);
-    setCookies.push(cookie);
-    const pair = cookie.split(';')[0];
-    req.headers.cookie = (req.headers.cookie ? req.headers.cookie + '; ' : '') + pair;
-  }
-  if (setCookies.length) res.setHeader('Set-Cookie', setCookies);
 }
 
 // Expired refresh tokens are cleaned up from time to time
@@ -460,7 +446,7 @@ setInterval(deleteExpiredRefreshTokens, 60 * 60 * 1000);
 // The signed-in user of the main page ('user') or the admin page ('admin'), from the access token.
 // The name and role are read from the database, so a role change takes effect at once
 function getSessionUser(req, audience = 'user') {
-  const access = verifyJwt(readCookie(req, TOKEN_COOKIES[audience].access), 'access', audience);
+  const access = verifyJwt(readBearer(req), 'access', audience);
   if (!access) return null;
   const user = db.prepare(`
     SELECT id, first_name AS firstName, last_name AS lastName, email, role FROM users WHERE id = ?
@@ -1088,7 +1074,7 @@ const routes = {
       .prepare('INSERT INTO users (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)')
       .run(firstName, lastName, email, hashPassword(password));
 
-    sendJson(res, 201, { user: { firstName, lastName, email } }, { 'Set-Cookie': issueTokens(Number(lastInsertRowid), 'user') });
+    sendJson(res, 201, { user: { firstName, lastName, email }, ...issueTokens(Number(lastInsertRowid), 'user') });
   },
 
   'POST /api/login': async (req, res) => {
@@ -1101,11 +1087,10 @@ const routes = {
       return sendJson(res, 401, { error: 'Email-ը կամ գաղտնաբառը սխալ է' });
     }
 
-    sendJson(
-      res, 200,
-      { user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: user.role === 'admin' } },
-      { 'Set-Cookie': issueTokens(user.id, 'user') }
-    );
+    sendJson(res, 200, {
+      user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: user.role === 'admin' },
+      ...issueTokens(user.id, 'user'),
+    });
   },
 
   // Login form of the admin page: guests are refused and are NOT logged in
@@ -1122,11 +1107,21 @@ const routes = {
       return sendJson(res, 403, { error: 'Մուտքն արգելված է' });
     }
 
-    sendJson(
-      res, 200,
-      { user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: true } },
-      { 'Set-Cookie': issueTokens(user.id, 'admin') }
-    );
+    sendJson(res, 200, {
+      user: { firstName: user.first_name, lastName: user.last_name, email: user.email, role: user.role, isAdmin: true },
+      ...issueTokens(user.id, 'admin'),
+    });
+  },
+
+  // A new access token for a valid refresh token (main page or admin page, as written in the token)
+  'POST /api/refresh': async (req, res) => {
+    const body = await readJson(req);
+    const token = typeof body.refreshToken === 'string' ? body.refreshToken : '';
+    for (const audience of AUDIENCES) {
+      const refresh = verifyRefreshToken(token, audience);
+      if (refresh) return sendJson(res, 200, { accessToken: signAccessToken(refresh.sub, audience) });
+    }
+    sendJson(res, 401, { error: 'Մուտք գործեք' });
   },
 
   // Who is signed in on the admin page (independent of the main page's login)
@@ -1134,12 +1129,16 @@ const routes = {
     sendJson(res, 200, { user: getSessionUser(req, 'admin') });
   },
 
-  'POST /api/admin/logout': (req, res) => {
-    sendJson(res, 200, { ok: true }, { 'Set-Cookie': revokeTokens(req, 'admin') });
+  'POST /api/admin/logout': async (req, res) => {
+    const body = await readJson(req);
+    revokeTokens(body.refreshToken, 'admin');
+    sendJson(res, 200, { ok: true });
   },
 
-  'POST /api/logout': (req, res) => {
-    sendJson(res, 200, { ok: true }, { 'Set-Cookie': revokeTokens(req, 'user') });
+  'POST /api/logout': async (req, res) => {
+    const body = await readJson(req);
+    revokeTokens(body.refreshToken, 'user');
+    sendJson(res, 200, { ok: true });
   },
 
   // A restaurant's tables with their availability for a given date and time
@@ -1701,7 +1700,6 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
     if (url.pathname.startsWith('/api/')) {
-      refreshAccessTokens(req, res);
       const route = routes[`${req.method} ${url.pathname}`];
       if (!route) return sendJson(res, 404, { error: 'Not found' });
       return await route(req, res, url);
